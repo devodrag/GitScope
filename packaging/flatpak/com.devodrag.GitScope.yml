@@ -1,10 +1,10 @@
 id: com.devodrag.GitScope
 runtime: org.gnome.Platform
-runtime-version: "47"
+runtime-version: "51"
 sdk: org.gnome.Sdk
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.node24
-  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node24//26.08
+  - org.freedesktop.Sdk.Extension.rust-stable//26.08
 command: gitscope
 finish-args:
   - --share=ipc
@@ -22,8 +22,24 @@ modules:
       env:
         CARGO_HOME: /run/build/gitscope/cargo-home
         GITSCOPE_TEST_BROWSER: ""
+    sources:
+      # Application source at the packaging commit
+      - type: git
+        url: https://github.com/devodrag/GitScope.git
+        commit: b9b5e910627b2cd6414d4cd62839b8b5473953b1
+      # Vendored Cargo dependencies: flatpak builds are offline, so crates.io
+      # access is unavailable during module builds. The archive contains
+      # vendor/ and .cargo/config.toml and unpacks into src-tauri/.
+      - type: archive
+        url: https://github.com/devodrag/GitScope/releases/download/v0.1.4/gitscope-cargo-vendor-0.1.4.tar.gz
+        sha256: 070611a1748123443240fa987356204262c7a0ec0b5c850f3471a84e7a5a8953
+        dest: src-tauri
+      # Pre-installed node_modules for the offline npm build (registry access
+      # is unavailable during module builds).
+      - type: archive
+        url: https://github.com/devodrag/GitScope/releases/download/v0.1.4/gitscope-node-vendor-0.1.4.tar.gz
+        sha256: 7ad5a257a8c0078a9f58f61166b6f5b089eb7514348daa08001b9093f8f9fb72
     build-commands:
-      - npm ci
       - npm run build
       - cargo build --offline --release --manifest-path src-tauri/Cargo.toml
       - install -Dm755 src-tauri/target/release/gitscope -t /app/bin
@@ -34,5 +50,3 @@ modules:
       - install -Dm644 src-tauri/icons/128x128.png
         /app/share/icons/hicolor/128x128/apps/com.devodrag.GitScope.png
       - install -Dm644 LICENSE /app/share/licenses/com.devodrag.GitScope/LICENSE
-      # flatpak-builder does not grant network access during module builds:
-      # vendor Cargo dependencies first (see packaging/flatpak/README.md).
