@@ -3,7 +3,7 @@
   <id>io.github.devodrag.GitScope</id>
   <name>GitScope</name>
   <summary>GitHub analytics on your Linux desktop</summary>
-  <developer>
+  <developer id="io.github.devodrag">
     <name translatable="no">devodrag</name>
   </developer>
   <metadata_license>FSFAP</metadata_license>
