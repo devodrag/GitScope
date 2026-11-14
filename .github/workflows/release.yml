@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build and publish
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
+            librsvg2-dev libsqlite3-dev libdbus-1-dev libxdo-dev \
+            clang libclang-dev pkg-config file
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Build and upload release assets
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: GitScope ${{ github.ref_name }}
+          releaseBody: |
+            See the assets below. The standalone executable requires glibc 2.34 or
+            newer and the system copies of GTK 3, WebKitGTK 4.1, SQLite and D-Bus.
+
+            Register in the application menu:
+            bash scripts/install-linux.sh /absolute/path/to/gitscope
+          releaseDraft: false
+          prerelease: false
+      - name: Upload standalone executable
+        uses: softprops/action-gh-release@v2
+        with:
+          files: src-tauri/target/release/gitscope
+          fail_on_unmatched_files: true

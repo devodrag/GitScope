@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=GitScope
+Comment=Explore and track public GitHub repositories
+Exec=gitscope
+Icon=com.devodrag.GitScope
+Terminal=false
+Categories=Development;
+StartupWMClass=gitscope
+X-Flatpak=com.devodrag.GitScope

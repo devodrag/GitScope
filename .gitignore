@@ -8,3 +8,5 @@
 /.agents/
 /.aws/
 /.codex/
+/src-tauri/vendor/
+/src-tauri/.cargo/

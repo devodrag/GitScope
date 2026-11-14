@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a defect in GitScope.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened, and what did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps starting from a fresh GitScope window.
+      placeholder: |
+        1. Open ...
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: GitScope version
+      placeholder: 0.1.3
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Distribution, desktop environment and display server.
+      placeholder: Arch Linux, GNOME, Wayland
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Additional information
+      description: Console output, screenshots or cached data details. Do not paste access tokens.

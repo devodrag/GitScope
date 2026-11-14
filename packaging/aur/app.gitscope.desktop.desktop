@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=GitScope
+Comment=Explore and track public GitHub repositories
+Exec=/usr/bin/gitscope
+Icon=app.gitscope.desktop
+Terminal=false
+Categories=Development;
+StartupWMClass=gitscope

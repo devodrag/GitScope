@@ -10,8 +10,11 @@ window with a local database and an offline response cache.
 ![License](https://img.shields.io/badge/license-MIT-4a5568)
 ![Platform](https://img.shields.io/badge/platform-Linux-GTK%20%2F%20WebKitGTK-4a5568)
 ![Stack](https://img.shields.io/badge/stack-Rust%20%2F%20TypeScript-Tauri-4a5568)
+[![CI](https://github.com/devodrag/GitScope/actions/workflows/ci.yml/badge.svg)](https://github.com/devodrag/GitScope/actions/workflows/ci.yml)
 
 ## Screenshots
+
+![Demo](docs/screenshots/demo.gif)
 
 | Light theme | Dark theme |
 | --- | --- |
@@ -142,7 +145,9 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 UI integration tests use an explicit IPC fixture in a test-only browser
 process. Set `GITSCOPE_TEST_BROWSER` to reuse an installed Chromium binary
-for those tests.
+for those tests. Contributions are welcome; see
+[CONTRIBUTING.md](CONTRIBUTING.md) for the development setup and the check
+suite expected in pull requests.
 
 ## Documentation
 

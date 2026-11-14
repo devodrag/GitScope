@@ -1,0 +1,38 @@
+id: com.devodrag.GitScope
+runtime: org.gnome.Platform
+runtime-version: "47"
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node24
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: gitscope
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --share=network
+  - --talk-name=org.freedesktop.Notifications
+  - --filesystem=~/.local/share/app.gitscope.desktop
+modules:
+  - name: gitscope
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/node24/bin:/usr/lib/sdk/rust-stable/bin
+      env:
+        CARGO_HOME: /run/build/gitscope/cargo-home
+        GITSCOPE_TEST_BROWSER: ""
+    build-commands:
+      - npm ci
+      - npm run build
+      - cargo build --offline --release --manifest-path src-tauri/Cargo.toml
+      - install -Dm755 src-tauri/target/release/gitscope -t /app/bin
+      - install -Dm644 packaging/flatpak/com.devodrag.GitScope.metainfo.xml
+        /app/share/metainfo/com.devodrag.GitScope.metainfo.xml
+      - install -Dm644 packaging/flatpak/com.devodrag.GitScope.desktop
+        /app/share/applications/com.devodrag.GitScope.desktop
+      - install -Dm644 src-tauri/icons/128x128.png
+        /app/share/icons/hicolor/128x128/apps/com.devodrag.GitScope.png
+      - install -Dm644 LICENSE /app/share/licenses/com.devodrag.GitScope/LICENSE
+      # flatpak-builder does not grant network access during module builds:
+      # vendor Cargo dependencies first (see packaging/flatpak/README.md).
