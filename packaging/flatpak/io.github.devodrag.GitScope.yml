@@ -1,4 +1,4 @@
-id: com.devodrag.GitScope
+id: io.github.devodrag.GitScope
 runtime: org.gnome.Platform
 runtime-version: "51"
 sdk: org.gnome.Sdk
@@ -52,10 +52,10 @@ modules:
       # so the build must run inside src-tauri for vendored sources to apply
       - cd src-tauri && cargo build --offline --release
       - install -Dm755 src-tauri/target/release/gitscope -t /app/bin
-      - install -Dm644 packaging/flatpak/com.devodrag.GitScope.metainfo.xml
-        /app/share/metainfo/com.devodrag.GitScope.metainfo.xml
-      - install -Dm644 packaging/flatpak/com.devodrag.GitScope.desktop
-        /app/share/applications/com.devodrag.GitScope.desktop
+      - install -Dm644 packaging/flatpak/io.github.devodrag.GitScope.metainfo.xml
+        /app/share/metainfo/io.github.devodrag.GitScope.metainfo.xml
+      - install -Dm644 packaging/flatpak/io.github.devodrag.GitScope.desktop
+        /app/share/applications/io.github.devodrag.GitScope.desktop
       - install -Dm644 src-tauri/icons/128x128.png
-        /app/share/icons/hicolor/128x128/apps/com.devodrag.GitScope.png
-      - install -Dm644 LICENSE /app/share/licenses/com.devodrag.GitScope/LICENSE
+        /app/share/icons/hicolor/128x128/apps/io.github.devodrag.GitScope.png
+      - install -Dm644 LICENSE /app/share/licenses/io.github.devodrag.GitScope/LICENSE

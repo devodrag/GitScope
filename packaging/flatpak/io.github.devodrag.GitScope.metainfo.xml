@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.devodrag.GitScope</id>
+  <id>io.github.devodrag.GitScope</id>
   <name>GitScope</name>
   <summary>GitHub analytics on your Linux desktop</summary>
   <developer>
@@ -25,7 +25,7 @@
       access token or OAuth Device Flow; the token never leaves the machine.
     </p>
   </description>
-  <launchable type="desktop-id">com.devodrag.GitScope.desktop</launchable>
+  <launchable type="desktop-id">io.github.devodrag.GitScope.desktop</launchable>
   <screenshots>
     <screenshot type="default">
       <image>https://raw.githubusercontent.com/devodrag/GitScope/main/docs/screenshots/overview-light.png</image>
