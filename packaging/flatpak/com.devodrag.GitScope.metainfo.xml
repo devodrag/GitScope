@@ -3,7 +3,9 @@
   <id>com.devodrag.GitScope</id>
   <name>GitScope</name>
   <summary>GitHub analytics on your Linux desktop</summary>
-  <developer_name translatable="no">devodrag</developer_name>
+  <developer>
+    <name translatable="no">devodrag</name>
+  </developer>
   <metadata_license>FSFAP</metadata_license>
   <project_license>MIT</project_license>
   <url type="homepage">https://github.com/devodrag/GitScope</url>
@@ -25,7 +27,7 @@
   </description>
   <launchable type="desktop-id">com.devodrag.GitScope.desktop</launchable>
   <screenshots>
-    <screenshot type="primary">
+    <screenshot type="default">
       <image>https://raw.githubusercontent.com/devodrag/GitScope/main/docs/screenshots/overview-light.png</image>
       <caption>Overview in light theme</caption>
     </screenshot>
@@ -39,6 +41,15 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.1.4" date="2026-11-15">
+      <description>
+        <p>
+          First release assembled by the automated pipeline: continuous
+          integration on every push and tag-triggered builds that attach deb,
+          rpm and AppImage bundles alongside the standalone executable.
+        </p>
+      </description>
+    </release>
     <release version="0.1.3" date="2026-11-15">
       <description>
         <p>
@@ -56,7 +67,7 @@
   <recommends>
     <control>keyboard</control>
     <control>pointing</control>
-    <display_size compare="ge">770</display_size>
+    <display_length compare="ge">770</display_length>
   </recommends>
   <requires>
     <display_length compare="ge">600</display_length>

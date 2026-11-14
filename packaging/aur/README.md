@@ -24,7 +24,7 @@ so it is performed manually:
    ```bash
    updpkgsums
    git add PKGBUILD app.gitscope.desktop.desktop .SRCINFO
-   git commit -m "gitscope-bin 0.1.3"
+   git commit -m "gitscope-bin 0.1.4"
    git push
    ```
 
