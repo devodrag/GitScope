@@ -1,0 +1,10 @@
+/node_modules/
+/dist/
+/src-tauri/target/
+/src-tauri/gen/
+/outputs/*
+/work/*
+*.log
+/.agents/
+/.aws/
+/.codex/

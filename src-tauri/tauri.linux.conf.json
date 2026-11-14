@@ -1,0 +1,15 @@
+{
+  "bundle": {
+    "linux": {
+      "deb": {
+        "depends": ["libsqlite3-0", "libdbus-1-3", "xdg-utils"],
+        "recommends": ["libnotify-bin"],
+        "files": {"/usr/share/doc/gitscope/copyright": "../LICENSE"}
+      },
+      "rpm": {
+        "depends": ["sqlite-libs", "dbus-libs", "xdg-utils"],
+        "recommends": ["libnotify"]
+      }
+    }
+  }
+}
