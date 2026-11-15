@@ -211,22 +211,22 @@ async fn local(
         "manage_disconnect" => manage::disconnect(store)?,
         "manage_repos" => {
             let manage = manage::auth(store)?;
-            return Ok(manage::repos(&manage).await?);
+            return manage::repos(manage).await;
         }
         "manage_create" => {
             let manage = manage::auth(store)?;
             let name = args["name"]
                 .as_str()
                 .ok_or_else(|| Error::new("validation"))?;
-            return Ok(
+            return
                 manage::create_repo(
-                    &manage,
+                    manage,
                     name,
                     args["description"].as_str().unwrap_or_default(),
                     args["private"].as_bool().unwrap_or(false),
                     args["autoInit"].as_bool().unwrap_or(true),
                 )
-                .await?,
+                .await,
             );
         }
         "manage_patch" => {
@@ -236,39 +236,39 @@ async fn local(
             if let Some(v) = args["description"].as_str() { fields["description"] = json!(v); }
             if let Some(v) = args["homepage"].as_str() { fields["homepage"] = json!(v); }
             if let Some(v) = args["private"].as_bool() { fields["private"] = json!(v); }
-            return Ok(manage::patch_repo(&manage, full, fields).await?);
+            return Ok(manage::patch_repo(manage, full, fields).await?);
         }
         "manage_delete" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(manage::delete_repo(&manage, full).await?);
+            return Ok(manage::delete_repo(manage, full).await?);
         }
         "manage_tree" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
             let path = args["path"].as_str().unwrap_or_default();
             let branch = args["branch"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(manage::tree(&manage, full, path, branch).await?);
+            return Ok(manage::tree(manage, full, path, branch).await?);
         }
         "manage_file" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(
+            return
                 manage::tree(
-                    &manage,
+                    manage,
                     full,
                     args["path"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["branch"].as_str().ok_or_else(|| Error::new("validation"))?,
                 )
-                .await?,
+                .await,
             );
         }
         "manage_save_file" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(
+            return
                 manage::save_file(
-                    &manage,
+                    manage,
                     full,
                     args["path"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["branch"].as_str().ok_or_else(|| Error::new("validation"))?,
@@ -276,81 +276,81 @@ async fn local(
                     args["content"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["sha"].as_str(),
                 )
-                .await?,
+                .await,
             );
         }
         "manage_delete_file" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(
+            return
                 manage::delete_file(
-                    &manage,
+                    manage,
                     full,
                     args["path"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["branch"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["message"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["sha"].as_str().ok_or_else(|| Error::new("validation"))?,
                 )
-                .await?,
+                .await,
             );
         }
         "manage_branches" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(manage::branches(&manage, full).await?);
+            return Ok(manage::branches(manage, full).await?);
         }
         "manage_new_branch" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(
+            return
                 manage::new_branch(
-                    &manage,
+                    manage,
                     full,
                     args["name"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["from"].as_str().ok_or_else(|| Error::new("validation"))?,
                 )
-                .await?,
+                .await,
             );
         }
         "manage_releases" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(manage::releases(&manage, full).await?);
+            return Ok(manage::releases(manage, full).await?);
         }
         "manage_new_release" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(
+            return
                 manage::new_release(
-                    &manage,
+                    manage,
                     full,
                     args["tag"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["name"].as_str().unwrap_or_default(),
                     args["body"].as_str().unwrap_or_default(),
                     args["target"].as_str().unwrap_or_default(),
                 )
-                .await?,
+                .await,
             );
         }
         "manage_delete_release" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
             let id = args["id"].as_i64().ok_or_else(|| Error::new("validation"))?;
-            return Ok(manage::delete_release(&manage, full, id).await?);
+            return Ok(manage::delete_release(manage, full, id).await?);
         }
         "manage_upload_asset" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
             let id = args["id"].as_i64().ok_or_else(|| Error::new("validation"))?;
-            return Ok(
+            return
                 manage::upload_asset(
-                    &manage,
+                    manage,
                     full,
                     id,
                     args["name"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["data"].as_str().ok_or_else(|| Error::new("validation"))?,
                 )
-                .await?,
+                .await,
             );
         }
         _ => return Err(Error::new("validation")),
