@@ -3,7 +3,7 @@
 # as the `gitscope-bin` package; see packaging/aur/README.md for the procedure.
 
 pkgname=gitscope-bin
-pkgver=0.1.5
+pkgver=0.1.6
 pkgrel=1
 pkgdesc="Desktop analytics for public GitHub projects"
 arch=('x86_64')
