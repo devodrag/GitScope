@@ -6,10 +6,10 @@ projects side by side, follow releases of a personal watchlist and inspect
 activity, commits, contributors and language composition — from a native
 window with a local database and an offline response cache.
 
-![Version](https://img.shields.io/badge/version-0.1.3-4a5568)
-![License](https://img.shields.io/badge/license-MIT-4a5568)
-![Platform](https://img.shields.io/badge/platform-Linux-GTK%20%2F%20WebKitGTK-4a5568)
-![Stack](https://img.shields.io/badge/stack-Rust%20%2F%20TypeScript-Tauri-4a5568)
+![Version](https://img.shields.io/github/v/release/devodrag/GitScope?color=4a5568)
+![License](https://img.shields.io/github/license/devodrag/GitScope?color=4a5568)
+![Platform](https://img.shields.io/badge/platform-Linux%20%C2%B7%20GTK3%20%C2%B7%20WebKitGTK-4a5568)
+![Stack](https://img.shields.io/badge/stack-Tauri%202%20%C2%B7%20Rust%20%C2%B7%20TypeScript-4a5568)
 [![CI](https://github.com/devodrag/GitScope/actions/workflows/ci.yml/badge.svg)](https://github.com/devodrag/GitScope/actions/workflows/ci.yml)
 
 ## Screenshots
