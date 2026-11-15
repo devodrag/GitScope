@@ -20,7 +20,7 @@ source=(
   "LICENSE::https://raw.githubusercontent.com/devodrag/GitScope/v${pkgver}/LICENSE"
 )
 sha256sums=(
-  '481203b72abf0d30387f318e9ab0ad99a2e13e5a27514961264358214aa9696c'
+  'd94bb7fb39003d958ea420320614ccfa60de6b676c6289ca35ee47f0c6d5289e'
   '631f3393898c0f3f5de168f84e1dca76ba2a7fcd19123d711a15ce0b3b4bc4b1'
   'SKIP'
   'SKIP'
