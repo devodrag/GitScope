@@ -2,7 +2,12 @@
 
 `PKGBUILD` builds the `gitscope-bin` package from the prebuilt release
 executable. Publishing to the AUR requires an AUR account and its SSH key,
-so it is performed manually:
+so it is performed manually.
+
+**2026-11-15:** AUR registration is temporarily paused (automated account
+creation wave, see aur-general). The PKGBUILD for the current release is
+ready in this directory — submit as soon as registration reopens, then watch
+the Arch news feed for the announcement.
 
 1. Create an AUR account at <https://aur.archlinux.org/register>.
 2. Clone the empty package base and copy the packaging files in:
