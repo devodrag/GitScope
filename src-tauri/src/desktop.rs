@@ -193,7 +193,7 @@ async fn local(
             ));
         }
         "refresh_watched" => return refresh_watched(&state, &app, true).await,
-        "digest" => return digest(&store).await,
+        "digest" => return digest(store).await,
         "digest_seen" => {
             store.set_setting(
                 "digest_last",
