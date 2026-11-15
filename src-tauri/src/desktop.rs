@@ -812,6 +812,8 @@ pub fn run() {
                     }
                 }
             });
+            #[cfg(feature = "tray-icon")]
+            {
             let language_ru = app
                 .handle()
                 .state::<AppState>()
@@ -830,10 +832,6 @@ pub fn run() {
             } else {
                 "Quit"
             };
-            #[cfg(feature = "tray-icon")]
-            {
-            #[cfg(feature = "tray-icon")]
-            {
             let open_item = tauri::menu::MenuItem::with_id(app, "tray-open", open_label, true, None::<&str>)?;
             let quit_item = tauri::menu::MenuItem::with_id(app, "tray-quit", quit_label, true, None::<&str>)?;
             let tray_menu = tauri::menu::Menu::with_items(app, &[&open_item, &quit_item])?;
