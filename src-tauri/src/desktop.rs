@@ -693,24 +693,21 @@ fn track_window(window: &WebviewWindow, path: PathBuf) {
                 if let Err(error) = write_export(&path, current.to_string().as_bytes()) {
                     eprintln!("GitScope window state: {:?}", error.code);
                 }
-                #[cfg(feature = "tray-icon")]
-                {
-                    let hide_to_tray = handle
-                        .app_handle()
-                        .try_state::<AppState>()
-                        .map(|state| {
-                            state
-                                .github
-                                .store
-                                .settings()
-                                .map(|settings| settings.close_to_tray)
-                                .unwrap_or(true)
-                        })
-                        .unwrap_or(true);
-                    if hide_to_tray {
-                        api.prevent_close();
-                        let _ = handle.hide();
-                    }
+                let hide_to_tray = handle
+                    .app_handle()
+                    .try_state::<AppState>()
+                    .map(|state| {
+                        state
+                            .github
+                            .store
+                            .settings()
+                            .map(|settings| settings.close_to_tray)
+                            .unwrap_or(true)
+                    })
+                    .unwrap_or(true);
+                if cfg!(feature = "tray-icon") && hide_to_tray {
+                    api.prevent_close();
+                    let _ = handle.hide();
                 }
             }
             _ => {}
@@ -865,7 +862,6 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
-            }
             }
             window.show()?;
             let restored = window.clone();
