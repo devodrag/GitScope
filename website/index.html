@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitScope — desktop GitHub analytics for Linux</title>
+<meta name="description" content="Desktop analytics for public GitHub projects. Local-first: daily snapshots in SQLite, offline cache, release notifications. Rust + Tauri 2, native GTK.">
+<link rel="icon" type="image/png" href="assets/icon.png">
+<style>
+:root{
+  --bg:#08090a; --panel:#101312; --panel2:#0c0f0e; --line:#1e2321;
+  --text:#e9eeea; --muted:#8f9a92; --accent:#7fd97f; --accent-dim:#3f6b46;
+  --glow:rgba(127,217,127,.16);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:auto}
+body{background:var(--bg);color:var(--text);font:16px/1.6 Inter,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--accent);color:#08090a}
+a{color:inherit;text-decoration:none}
+img{max-width:100%}
+
+/* ---------- preloader ---------- */
+#loader{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;transition:transform .8s cubic-bezier(.76,0,.24,1),opacity .5s}
+#loader.done{transform:translateY(-100%);opacity:0;pointer-events:none}
+#loader img{width:74px;height:74px;border-radius:18px;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 var(--glow)}50%{transform:scale(1.06);box-shadow:0 0 42px 4px var(--glow)}}
+#loader .name{font-weight:800;font-size:22px;letter-spacing:2px}
+#loader .bar{width:min(280px,60vw);height:2px;background:var(--line);border-radius:2px;overflow:hidden}
+#loader .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+#loader .pct{color:var(--muted);font-size:12.5px;letter-spacing:2px}
+
+/* ---------- chrome ---------- */
+#progress{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--accent-dim),var(--accent));z-index:60;box-shadow:0 0 12px var(--glow)}
+#grain{position:fixed;inset:-100px;z-index:55;pointer-events:none;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+#bg3d{position:fixed;inset:0;z-index:0;display:block}
+#bg3d.fade{opacity:.12}
+main{position:relative;z-index:2}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+
+/* ---------- custom cursor ---------- */
+@media (pointer:fine){
+  body.cursor-on{cursor:none}
+  body.cursor-on a,body.cursor-on button,body.cursor-on [data-hover]{cursor:none}
+}
+.cursor-dot,.cursor-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:99;border-radius:50%;transform:translate(-50%,-50%)}
+.cursor-dot{width:7px;height:7px;background:var(--accent);box-shadow:0 0 10px var(--glow)}
+.cursor-ring{width:34px;height:34px;border:1.5px solid rgba(143,223,143,.45);transition:width .25s,height .25s,border-color .25s,background .25s}
+.cursor-ring.hover{width:52px;height:52px;border-color:var(--accent);background:rgba(127,217,127,.07)}
+body:not(.cursor-on) .cursor-dot,body:not(.cursor-on) .cursor-ring{display:none}
+
+/* ---------- header ---------- */
+header{padding:26px 0;display:flex;align-items:center;gap:14px;position:relative;z-index:5}
+header img{width:42px;height:42px;border-radius:12px;box-shadow:0 0 24px var(--glow)}
+header strong{font-size:20px;letter-spacing:.4px}
+nav{margin-left:auto;display:flex;gap:24px;align-items:center}
+nav a{color:var(--muted);font-size:15px;transition:color .25s}
+nav a:hover{color:var(--text)}
+nav .gh{padding:9px 18px;border:1px solid var(--line);border-radius:999px;color:var(--text)}
+nav .gh:hover{border-color:var(--accent)}
+
+/* ---------- hero ---------- */
+.hero{min-height:92vh;display:flex;flex-direction:column;justify-content:center;padding:60px 0 40px;position:relative}
+.tagline{display:inline-flex;align-items:center;gap:9px;color:var(--accent);font-size:13.5px;letter-spacing:2.5px;text-transform:uppercase;border:1px solid rgba(127,217,127,.3);padding:8px 16px;border-radius:999px;background:rgba(127,217,127,.06);width:max-content}
+.tagline i{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+.hero h1{font-size:clamp(44px,7.4vw,92px);line-height:1.04;font-weight:800;letter-spacing:-2.5px;margin:26px 0 22px}
+.hero h1 .row{display:block;overflow:hidden}
+.hero h1 .ch{display:inline-block;white-space:pre;transform:translateY(110%);transition:transform .9s cubic-bezier(.22,1,.36,1)}
+.hero h1 .row.on .ch{transform:translateY(0)}
+.hero h1 .grn{color:var(--accent);text-shadow:0 0 34px var(--glow)}
+.hero p.sub{color:var(--muted);font-size:19px;max-width:620px;margin-bottom:36px}
+
+/* download button + OS menu */
+.dl{position:relative;width:max-content;max-width:100%}
+.dl-main{display:inline-flex;align-items:center;gap:12px;background:var(--accent);color:#071007;border:none;padding:17px 34px;border-radius:999px;font-weight:700;font-size:17px;transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s;box-shadow:0 8px 34px var(--glow)}
+.dl-main:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 14px 48px rgba(127,217,127,.3)}
+.dl-main svg{transition:transform .35s}
+.dl.open .dl-main svg{transform:rotate(180deg)}
+.os-menu{position:absolute;top:calc(100% + 14px);left:0;display:grid;grid-template-columns:repeat(2,minmax(230px,1fr));gap:10px;background:rgba(13,16,15,.92);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:20px;padding:14px;opacity:0;transform:translateY(-8px) scale(.97);pointer-events:none;transition:opacity .3s,transform .3s;z-index:10;min-width:100%}
+.dl.open .os-menu{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.os{display:flex;align-items:center;gap:12px;padding:13px 16px;border:1px solid var(--line);border-radius:14px;opacity:0;transform:translateX(-10px);transition:opacity .3s,transform .3s,border-color .25s,background .25s}
+.dl.open .os{opacity:1;transform:translateX(0)}
+.dl.open .os:nth-child(1){transition-delay:.05s}.dl.open .os:nth-child(2){transition-delay:.1s}.dl.open .os:nth-child(3){transition-delay:.15s}.dl.open .os:nth-child(4){transition-delay:.2s}.dl.open .os:nth-child(5){transition-delay:.25s}
+.os:hover{border-color:var(--accent);background:rgba(127,217,127,.06)}
+.os b{display:block;font-size:14.5px}
+.os small{color:var(--muted);font-size:12px}
+.os .ic{font-size:20px}
+
+/* ---------- counters strip ---------- */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:70px 0 10px;border:1px solid var(--line);border-radius:22px;background:rgba(13,16,15,.75);backdrop-filter:blur(10px);padding:30px 26px}
+.strip div{text-align:center}
+.strip b{font-size:34px;font-weight:800;letter-spacing:-1px;display:block}
+.strip b em{color:var(--accent);font-style:normal}
+.strip span{color:var(--muted);font-size:13px;letter-spacing:.4px}
+
+/* ---------- sections ---------- */
+section{padding:72px 0}
+h2.sec{font-size:clamp(30px,4vw,44px);letter-spacing:-1.2px;margin-bottom:14px}
+p.lead{color:var(--muted);font-size:17.5px;max-width:640px}
+.demo-frame{margin:46px 0 10px;border-radius:24px;border:1px solid var(--line);overflow:hidden;position:relative;transform-style:preserve-3d;transition:box-shadow .4s}
+.demo-frame:hover{box-shadow:0 30px 90px rgba(127,217,127,.14)}
+.demo-frame img{display:block;width:100%}
+.demo-frame::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(127,217,127,.08) 50%,transparent 70%);transform:translateX(-120%);transition:transform 1.1s}
+.demo-frame:hover::after{transform:translateX(120%)}
+
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:26px;transition:border-color .3s,transform .2s ease-out;transform-style:preserve-3d;will-change:transform}
+.card:hover{border-color:rgba(127,217,127,.45)}
+.card h3{font-size:17px;margin:12px 0 9px}
+.card .ic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:21px;background:rgba(127,217,127,.09);border:1px solid rgba(127,217,127,.22)}
+.card p{color:var(--muted);font-size:14.5px}
+
+.install{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:40px}
+.install .wide{grid-column:1/-1}
+pre{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px 18px;overflow-x:auto;color:#b9d9b9;font:13.5px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;position:relative;margin-top:14px;white-space:pre;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+pre::-webkit-scrollbar{height:8px}
+pre::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.copy{position:absolute;top:10px;right:10px;background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:5px 11px;font-size:12px;transition:.25s}
+.copy:hover{color:var(--accent);border-color:var(--accent)}
+.links a{display:inline-flex;align-items:center;gap:8px;margin:6px 10px 6px 0;padding:10px 18px;border:1px solid var(--line);border-radius:999px;font-size:14.5px;transition:border-color .25s,color .25s}
+.links a:hover{border-color:var(--accent);color:var(--accent)}
+small.dim{color:var(--muted)}
+.install h3{font-size:17px}
+
+footer{border-top:1px solid var(--line);margin-top:70px;padding:30px 0 46px;color:var(--muted);font-size:14px;display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;position:relative;z-index:2}
+
+/* ---------- reveal ---------- */
+body.js .reveal{opacity:0;transform:translateY(42px);filter:blur(5px);transition:opacity .9s cubic-bezier(.22,1,.36,1),transform .9s cubic-bezier(.22,1,.36,1),filter .9s}
+body.js .reveal.in{opacity:1;transform:none;filter:none}
+
+@media(max-width:860px){
+  .features{grid-template-columns:1fr}
+  .install{grid-template-columns:1fr}
+  .strip{grid-template-columns:repeat(2,1fr);row-gap:26px}
+  .os-menu{grid-template-columns:1fr}
+  nav a:not(.gh){display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <img src="assets/icon.png" alt="">
+  <div class="name">GITSCOPE</div>
+  <div class="bar"><i id="lbar"></i></div>
+  <div class="pct" id="lpct">0%</div>
+</div>
+
+<div id="progress"></div>
+<div id="grain"></div>
+<canvas id="bg3d"></canvas>
+<div class="cursor-dot" id="cdot"></div>
+<div class="cursor-ring" id="cring"></div>
+
+<main class="wrap">
+<header>
+  <img src="assets/icon.png" alt="GitScope">
+  <strong>GitScope</strong>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#install">Install</a>
+    <a class="gh" href="https://github.com/devodrag/GitScope" data-hover>GitHub ↗</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="tagline reveal"><i></i> v0.1.5 · Rust + Tauri 2 · MIT</div>
+  <h1 id="h1">
+    <span class="row">Your GitHub,</span>
+    <span class="row"><span class="grn">at a glance.</span></span>
+  </h1>
+  <p class="sub reveal">Desktop analytics for public GitHub projects — daily snapshots in a local SQLite database, an offline cache and release notifications. No browser tabs. Your data stays yours.</p>
+  <div class="dl reveal" id="dl">
+    <button class="dl-main" id="dlmain" data-hover>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12"/><path d="m6 12 6 6 6-6"/></svg>
+      Download for Linux
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="os-menu">
+      <a class="os" href="https://github.com/devodrag/GitScope/releases/download/v0.1.5/GitScope_0.1.5_amd64.deb" data-hover><span class="ic">📦</span><span><b>deb — Ubuntu / Debian / Mint</b><small>6 MB · also via apt below</small></span></a>
+      <a class="os" href="https://github.com/devodrag/GitScope/releases/download/v0.1.5/GitScope_0.1.5_amd64.AppImage" data-hover><span class="ic">🚀</span><span><b>AppImage — any distro</b><small>84 MB · run without installing</small></span></a>
+      <a class="os" href="https://github.com/devodrag/GitScope/releases/download/v0.1.5/GitScope-0.1.5-1.x86_64.rpm" data-hover><span class="ic">🎩</span><span><b>rpm — Fedora / RHEL / openSUSE</b><small>6 MB</small></span></a>
+      <a class="os" href="https://github.com/devodrag/GitScope/releases/download/v0.1.5/gitscope" data-hover><span class="ic">⚡</span><span><b>Standalone binary</b><small>14 MB · glibc 2.34+</small></span></a>
+      <a class="os" href="https://github.com/devodrag/GitScope/tree/main/packaging/aur" data-hover><span class="ic">🏹</span><span><b>Arch / AUR — soon</b><small>PKGBUILD ready in the repo</small></span></a>
+    </div>
+  </div>
+</section>
+
+<div class="strip reveal">
+  <div><b data-count="6" data-suffix=" MB">0</b><span>deb package size</span></div>
+  <div><b data-count="100" data-suffix="%">0</b><span>offline-capable</span></div>
+  <div><b data-count="0" data-prefix="" data-suffix=" bytes">0</b><span>telemetry sent</span></div>
+  <div><b><em>v</em><span data-count="1">0</span>.<span data-count="5">0</span></b><span>current release</span></div>
+</div>
+
+<section id="features">
+  <h2 class="sec reveal">Built local-first.</h2>
+  <p class="lead reveal">Every GitHub dashboard shows you today and forgets yesterday. GitScope keeps a daily snapshot of everything you follow — the history accumulates on your disk and belongs to you.</p>
+  <div class="features">
+    <div class="card reveal" data-tilt><div class="ic">📍</div><h3>Snapshots you own</h3><p>Daily stars, forks, watchers and issues for every followed repository, written into local SQLite. Growth charts for any period, even months later.</p></div>
+    <div class="card reveal" data-tilt><div class="ic">🔌</div><h3>Works offline</h3><p>ETag-backed response cache is replayed when GitHub is unreachable. Browse and analyze without network; everything syncs back later.</p></div>
+    <div class="card reveal" data-tilt><div class="ic">🔔</div><h3>Release notifications</h3><p>A personal watchlist with native desktop notifications the moment followed projects publish new releases.</p></div>
+    <div class="card reveal" data-tilt><div class="ic">⚖️</div><h3>Side-by-side compare</h3><p>Put any two repositories next to each other: stars, issues, languages, activity and release history.</p></div>
+    <div class="card reveal" data-tilt><div class="ic">⌨️</div><h3>Keyboard-first</h3><p>Ctrl+K command palette, dark and light themes, English and Russian interface.</p></div>
+    <div class="card reveal" data-tilt><div class="ic">🪶</div><h3>Native and light</h3><p>Tauri 2 with a Rust backend — a 6 MB deb instead of a browser tab farm, politely respecting GitHub rate limits.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2 class="sec reveal">See it in 30 seconds.</h2>
+  <div class="demo-frame reveal" data-tilt-soft><img src="assets/demo.gif" alt="GitScope demo"></div>
+</section>
+
+<section id="install">
+  <h2 class="sec reveal">Install in one minute.</h2>
+  <p class="lead reveal">Pick your poison. Updates arrive with a regular <code>apt upgrade</code>.</p>
+  <div class="install">
+    <div class="card wide reveal">
+      <h3>Debian, Ubuntu, Mint — apt repository</h3>
+      <pre id="aptcmd">curl -fsSL https://gitscope.dev-is.fun/apt/gitscope-archive-keyring.asc | sudo gpg --dearmor -o /usr/share/keyrings/gitscope-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/gitscope-archive-keyring.gpg] https://gitscope.dev-is.fun/apt stable main" | sudo tee /etc/apt/sources.list.d/gitscope.list
+sudo apt update
+sudo apt install git-scope</pre>
+      <button class="copy" id="copybtn" data-hover>Copy</button>
+    </div>
+    <div class="card reveal">
+      <h3>Arch Linux</h3>
+      <p><code>gitscope-bin</code> PKGBUILD is ready — awaiting the AUR registration to reopen:</p>
+      <pre>git clone https://github.com/devodrag/GitScope
+cd GitScope/packaging/aur
+makepkg -si</pre>
+    </div>
+    <div class="card reveal">
+      <h3>Fedora / others</h3>
+      <p>Grab a CI-built bundle from the release page:</p>
+      <div class="links">
+        <a href="https://github.com/devodrag/GitScope/releases/download/v0.1.5/GitScope-0.1.5-1.x86_64.rpm" data-hover>rpm · 6 MB</a>
+        <a href="https://github.com/devodrag/GitScope/releases/latest" data-hover>All releases ↗</a>
+      </div>
+      <p><small class="dim">glibc 2.34+, system GTK 3 and WebKitGTK 4.1.</small></p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>GitScope — free, open source, MIT.</span>
+  <span><a href="https://github.com/devodrag/GitScope" data-hover>GitHub</a> · <a href="https://github.com/devodrag/GitScope/releases" data-hover>Releases</a> · <a href="https://gitscope.dev-is.fun/apt/gitscope-archive-keyring.asc" data-hover>Archive key</a></span>
+</footer>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
+<script>
+(function(){
+"use strict";
+document.body.classList.add("js");
+var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- preloader ---------- */
+var pct=0, bar=document.getElementById("lbar"), pctEl=document.getElementById("lpct"), loader=document.getElementById("loader");
+var tick=setInterval(function(){
+  pct=Math.min(100,pct+Math.random()*16+6);
+  bar.style.width=pct+"%"; pctEl.textContent=Math.floor(pct)+"%";
+  if(pct>=100){clearInterval(tick);
+    setTimeout(function(){loader.classList.add("done");document.dispatchEvent(new Event("site:ready"));},350);}
+},110);
+
+/* ---------- smooth scroll ---------- */
+var lenis=null;
+if(!reduced && window.Lenis){
+  lenis=new Lenis({duration:1.15,smoothWheel:true});
+  function raf(t){lenis.raf(t);requestAnimationFrame(raf);} requestAnimationFrame(raf);
+  document.querySelectorAll('a[href^="#"]').forEach(function(a){
+    a.addEventListener("click",function(e){
+      var t=document.querySelector(a.getAttribute("href"));
+      if(t){e.preventDefault();lenis.scrollTo(t,{offset:-40});}
+    });
+  });
+}
+
+/* ---------- 3D scene ---------- */
+var canvas=document.getElementById("bg3d");
+try{
+  var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));
+  renderer.setSize(innerWidth,innerHeight);
+  var scene=new THREE.Scene();
+  var camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,100);
+  camera.position.z=9;
+
+  var group=new THREE.Group(); scene.add(group);
+
+  // star sphere: two-tone points on a soft shell
+  var N=1600,pos=new Float32Array(N*3),col=new Float32Array(N*3);
+  var c1=new THREE.Color(0x7fd97f),c2=new THREE.Color(0x2a3d31),mix;
+  for(var i=0;i<N;i++){
+    var r=5.4+Math.random()*4.6,th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
+    pos[i*3]=r*Math.sin(ph)*Math.cos(th); pos[i*3+1]=r*Math.sin(ph)*Math.sin(th)*.72; pos[i*3+2]=r*Math.cos(ph);
+    mix=Math.random();
+    col[i*3]=c1.r*mix+c2.r*(1-mix); col[i*3+1]=c1.g*mix+c2.g*(1-mix); col[i*3+2]=c1.b*mix+c2.b*(1-mix);
+  }
+  var pg=new THREE.BufferGeometry();
+  pg.setAttribute("position",new THREE.BufferAttribute(pos,3));
+  pg.setAttribute("color",new THREE.BufferAttribute(col,3));
+  group.add(new THREE.Points(pg,new THREE.PointsMaterial({size:.045,vertexColors:true,transparent:true,opacity:.85,sizeAttenuation:true})));
+
+  // wireframe icosahedron core
+  var icoG=new THREE.IcosahedronGeometry(2.1,1);
+  var core=new THREE.LineSegments(new THREE.EdgesGeometry(icoG),new THREE.LineBasicMaterial({color:0x7fd97f,transparent:true,opacity:.5}));
+  var inner=new THREE.Mesh(new THREE.IcosahedronGeometry(1.25,0),new THREE.MeshBasicMaterial({color:0x1d2b20,wireframe:true,transparent:true,opacity:.6}));
+  group.add(core); group.add(inner);
+
+  // orbit ring of dots
+  var M=120,rp=new Float32Array(M*3);
+  for(var j=0;j<M;j++){var a=j/M*Math.PI*2;rp[j*3]=Math.cos(a)*4.1;rp[j*3+1]=(Math.random()-.5)*.14;rp[j*3+2]=Math.sin(a)*4.1;}
+  var rg=new THREE.BufferGeometry(); rg.setAttribute("position",new THREE.BufferAttribute(rp,3));
+  var ring=new THREE.Points(rg,new THREE.PointsMaterial({color:0x7fd97f,size:.05,transparent:true,opacity:.7}));
+  ring.rotation.x=.42; group.add(ring);
+
+  var mx=0,my=0,vel={x:0,y:0},drag=false,px=0,py=0;
+  addEventListener("mousemove",function(e){mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5;});
+  addEventListener("pointerdown",function(e){if(e.target.closest("a,button,pre,input"))return;drag=true;px=e.clientX;py=e.clientY;});
+  addEventListener("pointermove",function(e){if(!drag)return;vel.y+=(e.clientX-px)*.00035;vel.x+=(e.clientY-py)*.00035;px=e.clientX;py=e.clientY;});
+  addEventListener("pointerup",function(){drag=false;});
+
+  var scrollP=0;
+  addEventListener("scroll",function(){
+    scrollP=Math.min(1,scrollY/innerHeight);
+    canvas.classList.toggle("fade",scrollP>.7);
+  },{passive:true});
+
+  function loop(t){
+    group.rotation.y+=.0011+vel.y; group.rotation.x+=vel.x;
+    vel.x*=.94; vel.y*=.94;
+    core.rotation.x+=.0022; inner.rotation.y-=.003; ring.rotation.z+=.0008;
+    camera.position.x+=(mx*.9-camera.position.x)*.04;
+    camera.position.y+=(-my*.7-camera.position.y)*.04;
+    camera.position.z=9+scrollP*2.4;
+    camera.lookAt(0,0,0);
+    renderer.render(scene,camera);
+    requestAnimationFrame(loop);
+  }
+  if(!reduced){loop();}
+  else{renderer.render(scene,camera);}
+  addEventListener("resize",function(){
+    camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);
+  });
+}catch(e){canvas.style.display="none";}
+
+/* ---------- custom cursor ---------- */
+if(matchMedia("(pointer:fine)").matches && !reduced){
+  document.body.classList.add("cursor-on");
+  var dot=document.getElementById("cdot"),ringE=document.getElementById("cring");
+  var cx=-100,cy=-100,rx=-100,ry=-100;
+  addEventListener("mousemove",function(e){cx=e.clientX;cy=e.clientY;});
+  (function cur(){
+    rx+=(cx-rx)*.16; ry+=(cy-ry)*.16;
+    dot.style.transform="translate("+(cx-3.5)+"px,"+(cy-3.5)+"px)";
+    ringE.style.transform="translate("+(rx-17)+"px,"+(ry-17)+"px)";
+    requestAnimationFrame(cur);
+  })();
+  document.querySelectorAll("a,button,[data-hover]").forEach(function(el){
+    el.addEventListener("mouseenter",function(){ringE.classList.add("hover");});
+    el.addEventListener("mouseleave",function(){ringE.classList.remove("hover");});
+  });
+}
+
+/* ---------- reveal on scroll ---------- */
+var io=new IntersectionObserver(function(es){
+  es.forEach(function(en){if(en.isIntersecting){en.target.classList.add("in");io.unobserve(en.target);}});
+},{threshold:.14});
+document.querySelectorAll(".reveal").forEach(function(el){io.observe(el);});
+
+/* ---------- hero title stagger ---------- */
+document.querySelectorAll("#h1 .row").forEach(function(row,ri){
+  var text=row.textContent; row.textContent="";
+  text.split("").forEach(function(ch,i){
+    var s=document.createElement("span");
+    s.className="ch"+(row.querySelector(".grn")===null?"":" grn");
+    s.textContent=ch===" "?" ":ch;
+    s.style.transitionDelay=(i*28+120)+"ms";
+    row.appendChild(s);
+  });
+  setTimeout(function(){row.classList.add("on");},500+ri*260);
+});
+
+/* ---------- counters ---------- */
+var cio=new IntersectionObserver(function(es){
+  es.forEach(function(en){
+    if(!en.isIntersecting)return;
+    var el=en.target,target=+el.dataset.count,suf=el.dataset.suffix||"",t0=null;
+    function step(t){
+      if(!t0)t0=t;
+      var p=Math.min(1,(t-t0)/1400),v=Math.floor(target*(1-Math.pow(1-p,3)));
+      el.textContent=v+suf;
+      if(p<1)requestAnimationFrame(step); else el.textContent=target+suf;
+    }
+    requestAnimationFrame(step);
+    cio.unobserve(el);
+  });
+},{threshold:.6});
+document.querySelectorAll("[data-count]").forEach(function(el){cio.observe(el);});
+
+/* ---------- tilt cards ---------- */
+if(matchMedia("(pointer:fine)").matches && !reduced){
+  document.querySelectorAll("[data-tilt],[data-tilt-soft]").forEach(function(card){
+    var max=card.hasAttribute("data-tilt-soft")?5:9;
+    card.addEventListener("mousemove",function(e){
+      var r=card.getBoundingClientRect();
+      var x=(e.clientX-r.left)/r.width-.5, y=(e.clientY-r.top)/r.height-.5;
+      card.style.transform="perspective(800px) rotateY("+(x*max)+"deg) rotateX("+(-y*max)+"deg) translateZ(6px)";
+    });
+    card.addEventListener("mouseleave",function(){card.style.transform="perspective(800px)";});
+  });
+}
+
+/* ---------- magnetic download button ---------- */
+var dlmain=document.getElementById("dlmain");
+dlmain.addEventListener("mousemove",function(e){
+  var r=dlmain.getBoundingClientRect();
+  var x=(e.clientX-r.left-r.width/2)/r.width, y=(e.clientY-r.top-r.height/2)/r.height;
+  dlmain.style.transform="translate("+x*10+"px,"+y*8+"px)";
+});
+dlmain.addEventListener("mouseleave",function(){dlmain.style.transform="";});
+
+/* ---------- download menu ---------- */
+var dl=document.getElementById("dl");
+dlmain.addEventListener("click",function(){dl.classList.toggle("open");});
+document.addEventListener("click",function(e){if(!dl.contains(e.target))dl.classList.remove("open");});
+
+/* ---------- copy apt command ---------- */
+var copybtn=document.getElementById("copybtn");
+copybtn.addEventListener("click",function(){
+  navigator.clipboard.writeText(document.getElementById("aptcmd").textContent).then(function(){
+    copybtn.textContent="Copied ✓"; setTimeout(function(){copybtn.textContent="Copy";},1600);
+  });
+});
+
+/* ---------- scroll progress ---------- */
+addEventListener("scroll",function(){
+  var h=document.documentElement;
+  document.getElementById("progress").style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+"%";
+},{passive:true});
+})();
+</script>
+</body>
+</html>
