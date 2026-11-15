@@ -26,6 +26,11 @@ img{max-width:100%}
 .aurora i:nth-child(2){width:44vw;height:44vw;right:-16vw;top:26vh;background:#1d4a2c;animation-delay:-9s}
 .aurora i:nth-child(3){width:38vw;height:38vw;left:22vw;bottom:-20vw;background:#173a25;animation-delay:-17s}
 @keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(6vw,4vh) scale(1.18)}}
+#trail{position:fixed;inset:0;z-index:57;pointer-events:none}
+.ghost-num{position:absolute;right:-1vw;top:-40px;font-size:clamp(130px,22vw,300px);font-weight:800;line-height:1;color:transparent;-webkit-text-stroke:1px rgba(127,217,127,.13);z-index:0;pointer-events:none;user-select:none;letter-spacing:-6px}
+.live{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.live b{color:var(--text)}
+.live i{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--glow);animation:blink 2s infinite}
 #grain{position:fixed;inset:-120px;z-index:58;pointer-events:none;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 
 /* ---------- preloader ---------- */
@@ -104,10 +109,9 @@ body.loaded .hbtn{opacity:1;transform:none;transition-delay:.9s}
 
 /* ---------- marquee ---------- */
 .marquee{border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;padding:16px 0;margin:60px 0 0;position:relative;z-index:3;background:rgba(8,9,9,.4)}
-.marquee .track{display:flex;gap:54px;width:max-content;animation:mq 30s linear infinite;will-change:transform}
+.marquee .track{display:flex;gap:54px;width:max-content;will-change:transform}
 .marquee span{color:var(--muted);font-size:13px;letter-spacing:3.5px;text-transform:uppercase;white-space:nowrap;display:flex;align-items:center;gap:54px}
 .marquee b{color:var(--accent);font-weight:400}
-@keyframes mq{to{transform:translateX(-50%)}}
 
 /* ---------- sections ---------- */
 section{padding:84px 0;position:relative}
@@ -185,6 +189,7 @@ body.js .reveal.d1{transition-delay:.08s}body.js .reveal.d2{transition-delay:.16
 <div id="progress"></div>
 <div class="aurora"><i></i><i></i><i></i></div>
 <div id="grain"></div>
+<canvas id="trail"></canvas>
 <canvas id="bg3d" data-cursor-label="DRAG"></canvas>
 <div class="cursor-dot" id="cdot"></div>
 <div class="cursor-ring" id="cring"><span id="clabel"></span></div>
@@ -198,6 +203,7 @@ body.js .reveal.d1{transition-delay:.08s}body.js .reveal.d2{transition-delay:.16
       <a href="#features">Features</a>
       <a href="#live">Live demo</a>
       <a href="#install">Install</a>
+      <span class="live" id="livestars"><i></i>★ <b>…</b> live</span>
       <a class="gh" href="https://github.com/devodrag/GitScope" data-hover>GitHub ↗</a>
     </nav>
   </div>
@@ -240,6 +246,7 @@ body.js .reveal.d1{transition-delay:.08s}body.js .reveal.d2{transition-delay:.16
 </section>
 
 <section id="features">
+  <div class="ghost-num" data-speed="0.1">01</div>
   <h2 class="sec reveal">Built <span class="grn">local-first.</span></h2>
   <p class="lead reveal d1">Every GitHub dashboard shows you today and forgets yesterday. GitScope keeps a daily snapshot of everything you follow — the history accumulates on your disk and belongs to you.</p>
   <div class="features">
@@ -253,6 +260,7 @@ body.js .reveal.d1{transition-delay:.08s}body.js .reveal.d2{transition-delay:.16
 </section>
 
 <section id="live">
+  <div class="ghost-num" data-speed="0.14">02</div>
   <h2 class="sec reveal">Don’t install — <span class="grn">just try it.</span></h2>
   <p class="lead reveal d1">GitScope Lite is a working in-browser edition running on the live GitHub API: search, analytics, comparisons and a watchlist. It runs right here, right below.</p>
   <div class="demo-shell reveal d2" data-tilt-soft>
@@ -262,6 +270,7 @@ body.js .reveal.d1{transition-delay:.08s}body.js .reveal.d2{transition-delay:.16
 </section>
 
 <section id="install">
+  <div class="ghost-num" data-speed="0.18">03</div>
   <h2 class="sec reveal">Install in <span class="grn">one minute.</span></h2>
   <p class="lead reveal d1">Pick your poison. Updates arrive with a regular <code>apt upgrade</code>.</p>
   <div class="install">
@@ -338,6 +347,10 @@ addEventListener("scroll",function(){
   var h=document.documentElement;
   hdr.classList.toggle("scrolled",h.scrollTop>30);
   document.getElementById("progress").style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+"%";
+  scrollVel=Math.min(60,Math.abs(h.scrollTop-lastScroll));lastScroll=h.scrollTop;
+  document.querySelectorAll(".ghost-num").forEach(function(g){
+    g.style.transform="translateY("+(h.scrollTop*(-parseFloat(g.dataset.speed||.1)))+"px)";
+  });
 },{passive:true});
 
 /* ---------- 3D constellation ---------- */
@@ -407,7 +420,16 @@ try{
   var ring=new THREE.Points(rg,new THREE.PointsMaterial({size:.07,map:glowTex,color:0x7fd97f,transparent:true,opacity:.65,depthWrite:false,blending:THREE.AdditiveBlending}));
   ring.rotation.x=.44;world.add(ring);
 
-  var mx=0,my=0,vel={x:0,y:0},drag=false,px=0,py=0,gravity=0;
+  var mx=0,my=0,vel={x:0,y:0},drag=false,px=0,py=0,gravity=0,rotY=0,rotX=0,fY=0,fX=0;
+  var waves=[];
+  function shockwave(cx,cy){
+    var ray=new THREE.Raycaster();
+    ray.setFromCamera({x:cx/innerWidth*2-1,y:-(cy/innerHeight*2-1)},camera);
+    var pt=ray.ray.origin.clone().add(ray.ray.direction.clone().multiplyScalar(9.5));
+    pt.applyMatrix4(new THREE.Matrix4().copy(world.matrix).invert());
+    var m=new THREE.Mesh(new THREE.RingGeometry(.12,.18,48),new THREE.MeshBasicMaterial({color:0x7fd97f,transparent:true,opacity:.85,side:THREE.DoubleSide}));
+    m.position.copy(pt);m.lookAt(camera.position);world.add(m);waves.push({m:m,t:0});
+  }
   addEventListener("mousemove",function(e){mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5;});
   addEventListener("pointerdown",function(e){
     if(e.target.closest("a,button,pre,input,iframe,.demo-shell"))return;
@@ -417,7 +439,7 @@ try{
     if(!drag)return;
     vel.y+=(e.clientX-px)*.0004;vel.x+=(e.clientY-py)*.0004;px=e.clientX;py=e.clientY;
   });
-  addEventListener("pointerup",function(){drag=false;});
+  addEventListener("pointerup",function(e){drag=false;if(!e.target.closest("a,button,pre,input,iframe,.demo-shell"))shockwave(e.clientX,e.clientY);});
   addEventListener("keydown",function(e){
     if(e.key.toLowerCase()==="g"&&document.activeElement.tagName!=="INPUT"){gravity=1;setTimeout(function(){gravity=0},5000);}
   });
@@ -431,9 +453,15 @@ try{
 
   var gravV=new Float32Array(K);
   function loop(t){
-    var spin=.0012+vel.y,spinX=vel.x;
-    world.rotation.y+=spin;world.rotation.x+=spinX+pp*.28;
-    vel.x*=.94;vel.y*=.94;
+    // rotation follows the cursor and drag inertia — it never spins on its own
+    rotY+=vel.y;rotX+=vel.x;vel.x*=.92;vel.y*=.92;
+    fY+=((mx*.5)-fY)*.02;fX+=((-my*.34)-fX)*.02;
+    world.rotation.y=rotY+fY;world.rotation.x=rotX+fX+pp*.24;
+    for(var wv=waves.length-1;wv>=0;wv--){
+      var w=waves[wv];w.t+=.03;
+      w.m.scale.setScalar(1+w.t*16);w.m.material.opacity=.85*(1-w.t);
+      if(w.t>=1){world.remove(w.m);waves.splice(wv,1);}
+    }
     corePulse=1+Math.sin(t*.0016)*.06;
     world.scale.setScalar(corePulse*(1+scrollP*.1));
     if(gravity){
@@ -521,11 +549,20 @@ var cio=new IntersectionObserver(function(es){
 },{threshold:.6});
 document.querySelectorAll("[data-count]").forEach(function(el){cio.observe(el);});
 
-/* ---------- marquee ---------- */
+/* ---------- marquee (JS-driven, speeds up with scroll velocity) ---------- */
 var mq=document.getElementById("mq");
 var words=["LOCAL-FIRST","OFFLINE-CAPABLE","SQLITE SNAPSHOTS","RUST","TAURI 2","WEBKITGTK","NO TELEMETRY","MIT","0-BYTE TELEMETRY","RELEASE ALERTS","CTRL+K PALETTE","6 MB DEB"];
 var seq=words.map(function(w,i){return (i%2?"<b>"+w+"</b>":w)}).join(" ◆ ")+" ◆ ";
 mq.innerHTML='<span>'+seq+seq+"</span>";
+var mqX=0,mqSpeed=.7,lastScroll=0,scrollVel=0;
+(function mqLoop(){
+  mqX-=mqSpeed+scrollVel*.06;
+  if(Math.abs(scrollVel)>2)scrollVel*=.9;else scrollVel*=.8;
+  var half=mq.scrollWidth/2;
+  if(-mqX>=half)mqX+=half;
+  mq.style.transform="translateX("+mqX+"px)";
+  requestAnimationFrame(mqLoop);
+})();
 
 /* ---------- tilt ---------- */
 if(fine&&!reduced){
@@ -573,6 +610,38 @@ document.getElementById("copybtn").addEventListener("click",function(){
     this.textContent="Copied ✓";var b=this;setTimeout(function(){b.textContent="Copy";},1600);
   }.bind(this));
 });
+
+/* ---------- live stars (real GitHub numbers) ---------- */
+fetch("https://api.github.com/repos/devodrag/GitScope").then(function(r){return r.json()}).then(function(d){
+  if(d.stargazers_count!=null){
+    document.getElementById("livestars").innerHTML="<i></i>★ <b>"+d.stargazers_count+"</b> live";
+  }
+}).catch(function(){});
+
+/* ---------- cursor star trail ---------- */
+if(fine&&!reduced){
+  var tc=document.getElementById("trail"),tctx=tc.getContext("2d");
+  var tp=[],tRun=false;
+  function sizeTrail(){tc.width=innerWidth;tc.height=innerHeight;}
+  sizeTrail();addEventListener("resize",sizeTrail);
+  addEventListener("mousemove",function(e){
+    if(tp.length>36)return;
+    tp.push({x:e.clientX+((Math.random()-.5)*14),y:e.clientY+((Math.random()-.5)*14),r:Math.random()*2.2+.8,l:1});
+    if(!tRun){tRun=true;trailLoop();}
+  });
+  function trailLoop(){
+    tctx.clearRect(0,0,tc.width,tc.height);
+    tp=tp.filter(function(p){return p.l>0.02});
+    tp.forEach(function(p){
+      p.l*=.9;p.y-=.5;
+      tctx.globalAlpha=p.l*.7;
+      tctx.fillStyle="#7fd97f";
+      tctx.beginPath();tctx.arc(p.x,p.y,p.r*p.l,0,7);tctx.fill();
+    });
+    tctx.globalAlpha=1;
+    if(tp.length){requestAnimationFrame(trailLoop);}else{tRun=false;tctx.clearRect(0,0,tc.width,tc.height);}
+  }
+}
 
 /* ---------- lazy demo iframe ---------- */
 var frame=document.getElementById("demoframe");
