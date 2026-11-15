@@ -220,7 +220,7 @@ async fn local(
                 .ok_or_else(|| Error::new("validation"))?;
             return
                 manage::create_repo(
-                    manage,
+                    &manage,
                     name,
                     args["description"].as_str().unwrap_or_default(),
                     args["private"].as_bool().unwrap_or(false),
@@ -254,7 +254,7 @@ async fn local(
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
             return
                 manage::tree(
-                    manage,
+                    &manage,
                     full,
                     args["path"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["branch"].as_str().ok_or_else(|| Error::new("validation"))?,
@@ -266,7 +266,7 @@ async fn local(
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
             return
                 manage::save_file(
-                    manage,
+                    &manage,
                     full,
                     args["path"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["branch"].as_str().ok_or_else(|| Error::new("validation"))?,
@@ -281,7 +281,7 @@ async fn local(
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
             return
                 manage::delete_file(
-                    manage,
+                    &manage,
                     full,
                     args["path"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["branch"].as_str().ok_or_else(|| Error::new("validation"))?,
@@ -300,7 +300,7 @@ async fn local(
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
             return
                 manage::new_branch(
-                    manage,
+                    &manage,
                     full,
                     args["name"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["from"].as_str().ok_or_else(|| Error::new("validation"))?,
@@ -317,7 +317,7 @@ async fn local(
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
             return
                 manage::new_release(
-                    manage,
+                    &manage,
                     full,
                     args["tag"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["name"].as_str().unwrap_or_default(),
@@ -338,7 +338,7 @@ async fn local(
             let id = args["id"].as_i64().ok_or_else(|| Error::new("validation"))?;
             return
                 manage::upload_asset(
-                    manage,
+                    &manage,
                     full,
                     id,
                     args["name"].as_str().ok_or_else(|| Error::new("validation"))?,
