@@ -43,10 +43,10 @@ fn restrict_permissions(path: &Path) -> Result<()> {
             .create(true)
             .mode(0o600)
             .open(path)
-            .map_err(database_error)?;
+            .map_err(|error| Error::detail("database", error))?;
     }
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
-        .map_err(database_error)?;
+        .map_err(|error| Error::detail("database", error))?;
     Ok(())
 }
 
