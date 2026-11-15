@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitScope Lite — try it in your browser</title>
+<meta name="description" content="A working lite version of GitScope in your browser: search repositories, explore analytics, compare projects, build a watchlist.">
+<link rel="icon" type="image/png" href="../assets/icon.png">
+<style>
+:root{
+  --bg:#08090a; --panel:#101312; --panel2:#0c0f0e; --line:#1e2321;
+  --text:#e9eeea; --muted:#8f9a92; --accent:#7fd97f; --glow:rgba(127,217,127,.16); --red:#e57757;
+}
+body.light{--bg:#f2f4f1;--panel:#ffffff;--panel2:#f7f9f6;--line:#dde3dc;--text:#161a17;--muted:#5d665f;--accent:#2e7d3a;--glow:rgba(46,125,58,.14)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:15px/1.55 Inter,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;gap:14px;padding:12px 0}
+.top img{width:32px;height:32px;border-radius:9px}
+.top .brand{font-weight:800;font-size:17px}
+.top .brand small{color:var(--muted);font-weight:600;font-size:11px;letter-spacing:1.4px;vertical-align:middle;margin-left:6px}
+#q{flex:1;min-width:120px;background:var(--panel);border:1px solid var(--line);border-radius:999px;color:var(--text);padding:10px 18px;font-size:14.5px;outline:none;transition:border-color .25s}
+#q:focus{border-color:var(--accent)}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.chip b{color:var(--text)}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--glow)}
+.chip.limit i{background:var(--red);box-shadow:0 0 8px rgba(229,119,87,.4)}
+.btn{background:var(--accent);color:#071007;border:none;border-radius:999px;padding:9px 18px;font-weight:700;font-size:13.5px;cursor:pointer;transition:filter .25s}
+.btn:hover{filter:brightness(1.09)}
+.ghost{background:none;border:1px solid var(--line);color:var(--text);border-radius:999px;padding:8px 16px;font-size:13px;cursor:pointer;transition:border-color .25s}
+.ghost:hover{border-color:var(--accent)}
+
+.view{padding:26px 0 60px}
+h1{font-size:clamp(26px,4vw,38px);letter-spacing:-.8px;margin-bottom:6px}
+p.dim{color:var(--muted);margin-bottom:20px}
+
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.card b{font-size:26px;display:block;letter-spacing:-.5px}
+.card span{color:var(--muted);font-size:12.5px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pane{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.pane h3{font-size:15px;margin-bottom:12px;color:var(--muted);font-weight:600;letter-spacing:.3px}
+
+ul.list{list-style:none}
+ul.list li{display:flex;align-items:center;gap:12px;padding:9px 6px;border-bottom:1px solid var(--line)}
+ul.list li:last-child{border:none}
+ul.list img{width:26px;height:26px;border-radius:50%}
+ul.list .nm{font-weight:600}
+ul.list small{color:var(--muted);margin-left:auto;text-align:right}
+
+.repo-head{display:flex;gap:16px;align-items:flex-start;margin-bottom:6px}
+.repo-head img{width:64px;height:64px;border-radius:14px}
+.repo-head h1{margin:0}
+.repo-head .desc{color:var(--muted);max-width:640px;margin:6px 0 4px}
+.tabs{display:flex;gap:8px;margin:16px 0 6px;flex-wrap:wrap}
+.tabs button{background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:8px 16px;font-size:13.5px;cursor:pointer;transition:.25s}
+.tabs button.on,.tabs button:hover{border-color:var(--accent);color:var(--accent)}
+canvas{width:100%;display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle}
+.commits li{gap:10px}
+.commits .msg{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%}
+.rel .nm{font-weight:700}
+.badge{font-size:11px;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:2px 7px}
+.spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;margin:40px auto;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.err{background:rgba(229,119,87,.09);border:1px solid rgba(229,119,87,.4);color:var(--red);border-radius:14px;padding:16px 18px;margin:16px 0;font-size:14px}
+.err b{display:block;margin-bottom:4px}
+.empty{color:var(--muted);text-align:center;padding:44px 0}
+.foot{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 44px;color:var(--muted);font-size:13px;display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
+.wl-btn{display:inline-flex;align-items:center;gap:8px;margin-left:auto}
+@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.repo-head{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="top"><div class="wrap top-in">
+  <img src="../assets/icon.png" alt=""><span class="brand">GitScope <small>LITE · WEB DEMO</small></span>
+  <input id="q" placeholder="Search repositories…  (press /)" autocomplete="off" spellcheck="false">
+  <span class="chip" id="rate"><i></i><b>–</b> / 60</span>
+  <button class="ghost" id="theme" title="Toggle theme">☾</button>
+  <a class="btn" href="../#install">Install app</a>
+</div></div>
+
+<div class="wrap view" id="app"></div>
+
+<div class="wrap foot">
+  <span>GitScope Lite runs entirely in your browser on the public GitHub API — guest limits apply.</span>
+  <span><a href="../">← Back to site</a> · <a href="https://github.com/devodrag/GitScope">GitHub</a></span>
+</div>
+
+<script>
+"use strict";
+var $=function(s){return document.querySelector(s)};
+var app=$("#app"), q=$("#q");
+var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]})};
+var fmt=function(n){return new Intl.NumberFormat("en").format(n)};
+var THEMEKEY="gitscope_lite_theme";
+
+/* ---------- theme ---------- */
+if(localStorage.getItem(THEMEKEY)==="light")document.body.classList.add("light");
+$("#theme").onclick=function(){
+  var l=document.body.classList.toggle("light");
+  localStorage.setItem(THEMEKEY,l?"light":"dark");
+  draw();
+};
+
+/* ---------- rate limit chip ---------- */
+function refreshRate(){
+  fetch("https://api.github.com/rate_limit").then(function(r){return r.json()}).then(function(d){
+    var core=d.resources.core;
+    var el=$("#rate");
+    el.classList.toggle("limit",core.remaining<6);
+    el.innerHTML="<i></i><b>"+core.remaining+"</b> / "+core.limit+" · resets "+new Date(core.reset*1000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  }).catch(function(){});
+}
+refreshRate();
+
+/* ---------- fetch with cache + error surfacing ---------- */
+var cache={}, TTL=300000;
+function api(path,opts){
+  var key=path+(opts&&opts.headers?"|h":"");
+  var hit=cache[key];
+  if(hit&&Date.now()-hit.t<TTL)return Promise.resolve(hit.v);
+  return fetch("https://api.github.com"+path,{
+    headers:Object.assign({"Accept":"application/vnd.github+json"},(opts&&opts.headers)||{})
+  }).then(function(r){
+    if(r.status===403||r.status===429){
+      var err=new Error("rate_limit"); err.code="rate_limit";
+      var reset=r.headers.get("x-ratelimit-reset");
+      err.reset=reset?+reset:null; throw err;
+    }
+    if(r.status===404){var e404=new Error("not_found");e404.code="not_found";throw e404;}
+    if(!r.ok){var e=new Error("http_"+r.status);e.code="http";throw e;}
+    return r.json().then(function(v){cache[key]={v:v,t:Date.now()};return v;});
+  });
+}
+function errBox(e,extra){
+  if(e&&e.code==="rate_limit"){
+    var when=e.reset?new Date(e.reset*1000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"later";
+    return '<div class="err"><b>Guest rate limit reached</b>GitHub allows 60 requests per hour per IP. The limit resets at '+when+'. The desktop app connects a token (or works unauthenticated with smart caching) so this is never a problem there.'+(extra||"")+'</div>';
+  }
+  if(e&&e.code==="not_found")
+    return '<div class="err"><b>Not found</b>No such repository or user on GitHub.'+(extra||"")+'</div>';
+  return '<div class="err"><b>GitHub is unreachable</b>'+(e&&e.message?esc(e.message):"Network error")+'. The desktop app caches responses and keeps working offline.'+(extra||"")+'</div>';
+}
+function spin(){app.innerHTML='<div class="spin"></div>'}
+
+/* ---------- charts (canvas, no libs) ---------- */
+function prep(cv,px){
+  var dpr=devicePixelRatio||1;
+  var w=cv.clientWidth||px||300;
+  cv.width=w*dpr; cv.height=220*dpr; cv.style.height="220px";
+  var ctx=cv.getContext("2d"); ctx.scale(dpr,dpr); return {ctx:ctx,w:w,h:220};
+}
+var CSSV=function(){var s=getComputedStyle(document.body);return{line:s.getPropertyValue("--line").trim(),muted:s.getPropertyValue("--muted").trim(),accent:s.getPropertyValue("--accent").trim(),text:s.getPropertyValue("--text").trim()}};
+var chartQueue=[];
+function draw(){var v;while(v=chartQueue.shift())v();}
+
+function donut(cv,entries){
+  chartQueue.push(function(){
+    var p=prep(cv),c=p.ctx,cs=p.w,total=entries.reduce(function(s,e){return s+e[1]},0)||1;
+    var cx=p.w/2,cy=110,r=74,ir=44,a0=-Math.PI/2,colors=["#7fd97f","#a3c2a0","#5c8f60","#3f6b46","#c9d8c9","#8fae91"];
+    if(document.body.classList.contains("light"))colors=["#2e7d3a","#5c8f60","#3f6b46","#8fbf8f","#1f5227","#74a37b"];
+    entries.forEach(function(e,i){
+      var a1=a0+e[1]/total*Math.PI*2;
+      c.beginPath();c.arc(cx,cy,r,a0,a1);c.arc(cx,cy,ir,a1,a0,true);c.closePath();
+      c.fillStyle=colors[i%colors.length];c.fill();a0=a1;
+    });
+    c.fillStyle=CSSV().text;c.font="700 20px Inter,sans-serif";c.textAlign="center";c.textBaseline="middle";
+    c.fillText(cs>999?(cs/1000).toFixed(1)+" KB":cs+" B",cx,cy);
+    var lg=document.getElementById(cv.dataset.legend);
+    if(lg)lg.innerHTML=entries.slice(0,7).map(function(e,i){
+      return '<span><i style="background:'+colors[i%colors.length]+'"></i>'+esc(e[0])+" "+(e[1]/total*100).toFixed(1)+"%</span>";
+    }).join("");
+  });
+}
+function bars(cv,data,color){
+  chartQueue.push(function(){
+    var p=prep(cv),c=p.ctx,cs=p.w,vals=data.map(function(d){return d[1]});
+    var max=Math.max.apply(null,vals.concat([1])),n=vals.length,bw=cs/n;
+    var cvv=CSSV();
+    vals.forEach(function(v,i){
+      var h=v/max*(170);
+      c.fillStyle=color||cvv.accent;
+      c.globalAlpha=v?1:.25;
+      c.fillRect(i*bw+bw*.18,196-h,bw*.64,h);
+      c.globalAlpha=1;
+    });
+    c.fillStyle=cvv.muted;c.font="11px Inter,sans-serif";c.textAlign="center";
+    var step=Math.ceil(n/6);
+    data.forEach(function(d,i){if(i%step===0)c.fillText(d[0],Math.min(cs-30,Math.max(24,i*bw+bw/2)),210)});
+  });
+}
+function line(cv,data,color,label){
+  chartQueue.push(function(){
+    var p=prep(cv),c=p.ctx,cs=p.w;
+    var vals=data.map(function(d){return d[1]}),min=Math.min.apply(null,vals),max=Math.max.apply(null,vals.concat([min+1]));
+    var cvv=CSSV(),x0=34,x1=cs-10,y0=14,y1=196;
+    function X(i){return x0+(x1-x0)*i/(vals.length-1||1)}
+    function Y(v){return y1-(v-min)/(max-min)*(y1-y0)}
+    c.strokeStyle=cvv.line;c.lineWidth=1;
+    for(var g=0;g<4;g++){var y=y0+(y1-y0)*g/3;c.beginPath();c.moveTo(x0,y);c.lineTo(x1,y);c.stroke();}
+    c.beginPath();vals.forEach(function(v,i){i?c.lineTo(X(i),Y(v)):c.moveTo(X(i),Y(v))});
+    c.strokeStyle=color||cvv.accent;c.lineWidth=2.2;c.stroke();
+    c.lineTo(X(vals.length-1),y1);c.lineTo(x0,y1);c.closePath();
+    c.fillStyle="rgba(127,217,127,.14)";c.fill();
+    c.fillStyle=cvv.muted;c.font="10.5px Inter,sans-serif";c.textAlign="right";
+    c.fillText(fmt(max),x0-4,y0+8);c.fillText(fmt(min),x0-4,y1);
+    var last=data[data.length-1];
+    c.fillStyle=cvv.text;c.font="700 13px Inter,sans-serif";c.textAlign="left";
+    c.fillText(fmt(last[1])+" "+(label||""),x0+8,y0+10);
+  });
+}
+
+/* ---------- watchlist (localStorage) ---------- */
+var WLKEY="gitscope_lite_watchlist";
+function wl(){try{return JSON.parse(localStorage.getItem(WLKEY))||{}}catch(e){return{}}}
+function wlSave(w){localStorage.setItem(WLKEY,JSON.stringify(w))}
+function wlSnapshot(r){
+  var w=wl(),e=w[r.full_name];
+  var now=Date.now();
+  if(!e){w[r.full_name]={first:{stars:r.stargazers_count,forks:r.forks_count,issues:r.open_issues_count,t:now},last:{stars:r.stargazers_count,forks:r.forks_count,issues:r.open_issues_count,t:now},repo:r};}
+  else{e.last={stars:r.stargazers_count,forks:r.forks_count,issues:r.open_issues_count,t:now};e.repo=r;}
+  wlSave(w);
+}
+
+/* ---------- views ---------- */
+function home(){
+  app.innerHTML=
+    '<h1>Explore GitHub, right here.</h1>'+
+    '<p class="dim">This lite build of GitScope runs entirely in your browser on the public GitHub API. Search a repository — commits, contributors, languages, star growth, releases and a watchlist all work for real. Guest limits: 60 requests per hour.</p>'+
+    '<div class="grid">'+
+      '<div class="card"><b>🔍</b><span>Search any repository and open full analytics</span></div>'+
+      '<div class="card"><b>📈</b><span>Star growth, commit activity and language mix</span></div>'+
+      '<div class="card"><b>⚖️</b><span>Compare two projects side by side</span></div>'+
+      '<div class="card"><b>🔖</b><span>Watchlist with local snapshots (localStorage)</span></div>'+
+    '</div>'+
+    '<div class="pane"><h3>Try one of these</h3><ul class="list">'+
+      ["devodrag/GitScope","BurntSushi/ripgrep","torvalds/linux","vinta/awesome-python"].map(function(r){
+        return '<li><span class="nm"><a href="#/repo/'+r+'" data-hover>'+r+"</a></span></li>";
+      }).join("")+
+    "</ul></div>";
+}
+function searchView(query){
+  spin();
+  api("/search/repositories?q="+encodeURIComponent(query)+"&sort=stars&per_page=14").then(function(d){
+    if(!d.items.length){app.innerHTML='<h1>Search</h1><div class="empty">Nothing found for “'+esc(query)+'”</div>';return;}
+    app.innerHTML=
+      '<h1>Search</h1><p class="dim">'+fmt(d.total_count)+' results for “'+esc(query)+'” — sorted by stars</p>'+
+      '<div class="pane"><ul class="list">'+d.items.map(function(r){
+        return '<li><img src="'+esc(r.owner.avatar_url)+'" alt="">'+
+          '<span><span class="nm"><a href="#/repo/'+esc(r.full_name)+'">'+esc(r.full_name)+"</a></span><br><small style='margin:0'>"+esc((r.description||"").slice(0,110))+"</small></span>"+
+          "<small>★ "+fmt(r.stargazers_count)+" · "+esc(r.language||"—")+"</small></li>";
+      }).join("")+"</ul></div>";
+  }).catch(function(e){app.innerHTML="<h1>Search</h1>"+errBox(e)});
+}
+function repoView(full){
+  spin();
+  api("/repos/"+full).then(function(r){
+    wlSnapshot(r);
+    var w=wl()[full]||null;
+    var delta=w?(r.stargazers_count-w.first.stars):0;
+    app.innerHTML=
+      '<div class="repo-head"><img src="'+esc(r.owner.avatar_url)+'" alt="">'+
+      '<div style="flex:1"><h1>'+esc(r.full_name)+"</h1>"+
+      '<div class="desc">'+esc(r.description||"")+"</div>"+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="badge">'+esc(r.language||"—")+"</span><span class='badge'>"+esc(r.license&&r.license.spdx_id||"no license")+'</span><span class="badge">updated '+new Date(r.pushed_at).toLocaleDateString()+'</span>'+
+      '<button class="btn wl-btn" id="wlbtn">'+(w?"★ Watching":"☆ Add to watchlist")+"</button></div></div></div>"+
+      (w&&delta?'<div class="pane" style="margin:10px 0"><b style="color:var(--accent)">+'+fmt(delta)+' stars</b> <span class="dim">since your first snapshot '+new Date(w.first.t).toLocaleDateString()+" — exactly what the desktop app accumulates automatically, for every repository, forever.</span></div>":"")+
+      '<div class="grid">'+
+        '<div class="card"><b>'+fmt(r.stargazers_count)+"</b><span>stars</span></div>"+
+        '<div class="card"><b>'+fmt(r.forks_count)+"</b><span>forks</span></div>"+
+        '<div class="card"><b>'+fmt(r.open_issues_count)+"</b><span>open issues</span></div>"+
+        '<div class="card"><b>'+fmt(r.subscribers_count||0)+"</b><span>watchers</span></div>"+
+      "</div>"+
+      '<div class="tabs" id="tabs">'+
+        '<button data-t="ov" class="on">Overview</button><button data-t="cm">Commits</button><button data-t="st">Activity 52w</button><button data-t="rl">Releases</button><button data-t="cp">Compare</button>'+
+      "</div><div id=\"pane\"></div>";
+    document.getElementById("wlbtn").onclick=function(){wlToggle(r,this)};
+    var state={t:"ov"};
+    var panes={
+      ov:function(){
+        api("/repos/"+full+"/languages").then(function(lang){
+          var entries=Object.entries(lang).sort(function(a,b){return b[1]-a[1]}).slice(0,7);
+          document.getElementById("pane").innerHTML=
+            '<div class="two"><div class="pane"><h3>Language composition</h3><canvas id="lg" data-legend="lgl"></canvas><div class="legend" id="lgl"></div></div>'+
+            '<div class="pane"><h3>Top contributors</h3><ul class="list" id="ct">loading…</ul></div></div>';
+          donut($("#lg"),entries);draw();
+          return api("/repos/"+full+"/contributors?per_page=8").then(function(ct){
+            $("#ct").innerHTML=ct.map(function(c){
+              return '<li><img src="'+esc(c.avatar_url)+'" alt=""><span class="nm"><a href="'+esc(c.html_url)+'" target="_blank" rel="noopener">'+esc(c.login)+"</a></span><small>"+fmt(c.contributions)+" commits</small></li>";
+            }).join("");
+          });
+        }).catch(function(e){document.getElementById("pane").innerHTML=errBox(e)});
+      },
+      cm:function(){
+        api("/repos/"+full+"/commits?per_page=30").then(function(cs){
+          var byDay={};
+          cs.forEach(function(c){var d=c.commit.author.date.slice(0,10);byDay[d]=(byDay[d]||0)+1});
+          var data=Object.entries(byDay).sort().slice(-14);
+          document.getElementById("pane").innerHTML=
+            '<div class="pane"><h3>Recent commit activity (last 30 commits)</h3><canvas id="cm"></canvas></div>'+
+            '<div class="pane" style="margin-top:14px"><h3>Latest commits</h3><ul class="list commits">'+
+            cs.slice(0,10).map(function(c){
+              return '<li><img src="'+esc(c.author&&c.author.avatar_url||"")+'" alt=""><span class="msg">'+esc(c.commit.message.split("\n")[0])+"</span><small>"+esc(c.author&&c.author.login||"")+" · "+new Date(c.commit.author.date).toLocaleDateString()+"</small></li>";
+            }).join("")+"</ul></div>";
+          bars($("#cm"),data);draw();
+        }).catch(function(e){document.getElementById("pane").innerHTML=errBox(e)});
+      },
+      st:function(){
+        var w=wl()[full];
+        api("/repos/"+full+"/stats/commit_activity").then(function(stats){
+          if(!stats||!stats.length){
+            document.getElementById("pane").innerHTML='<div class="empty">GitHub is computing statistics for this repository — wait a few seconds and reopen the tab.</div>';
+            return;
+          }
+          var data=stats.map(function(s){
+            var d=new Date(s.week*1000).toISOString().slice(5,10).replace("-","/");
+            return [d,s.total];
+          }).slice(-52);
+          document.getElementById("pane").innerHTML=
+            '<div class="pane"><h3>Commit activity — last 52 weeks ('+fmt(stats.reduce(function(s,x){return s+x.total},0))+' commits)</h3><canvas id="sg"></canvas></div>'+
+            (w?'<div class="pane" style="margin-top:14px"><h3>Your local snapshots</h3><p class="dim" style="font-size:13.5px">First snapshot: <b>'+fmt(w.first.stars)+"</b> stars on "+new Date(w.first.t).toLocaleDateString()+" · latest: <b>"+fmt(w.last.stars)+"</b> · delta: <b style='color:var(--accent)'>"+(w.last.stars-w.first.stars>=0?"+":"")+(w.last.stars-w.first.stars)+"</b>. The desktop app records such snapshots every day, automatically, for every watched repository — that is where the long-term growth curves come from.</p></div>":
+              '<div class="pane" style="margin-top:14px"><h3>Your local snapshots</h3><p class="dim" style="font-size:13.5px">Press “☆ Add to watchlist” — GitScope will snapshot stars/forks/issues on every visit, so deltas accumulate. The desktop app does it daily, automatically, for the long-term curves.</p></div>');
+          line($("#sg"),data,null,"commits / wk");draw();
+        }).catch(function(e){document.getElementById("pane").innerHTML=errBox(e)});
+      },
+      rl:function(){
+        api("/repos/"+full+"/releases?per_page=8").then(function(rl){
+          document.getElementById("pane").innerHTML=rl.length?
+            '<div class="pane"><h3>Releases</h3><ul class="list rel">'+rl.map(function(x){
+              return '<li><span><span class="nm">'+esc(x.name||x.tag_name)+"</span> <span class='badge'>"+esc(x.tag_name)+"</span></span><small>"+new Date(x.published_at).toLocaleDateString()+"</small></li>";
+            }).join("")+"</ul></div>":
+            '<div class="empty">No releases yet</div>';
+        }).catch(function(e){document.getElementById("pane").innerHTML=errBox(e)});
+      },
+      cp:function(){
+        document.getElementById("pane").innerHTML=
+          '<div class="pane"><h3>Compare with another repository</h3>'+
+          '<input id="cpin" placeholder="owner/repo" style="background:var(--panel2);border:1px solid var(--line);border-radius:999px;color:var(--text);padding:10px 18px;width:min(340px,90%);font-size:14px"> '+
+          '<button class="btn" id="cpgo">Compare</button> <span class="dim" style="font-size:13px">vs <b>'+esc(full)+"</b></span></div>";
+        $("#cpgo").onclick=function(){
+          var v=$("#cpin").value.trim();
+          if(v&&v.includes("/"))location.hash="#/compare/"+encodeURIComponent(full)+"/"+encodeURIComponent(v);
+        };
+      }
+    };
+    function setPane(t){state.t=t;
+      document.querySelectorAll("#tabs button").forEach(function(b){b.classList.toggle("on",b.dataset.t===t)});
+      panes[t]();
+    }
+    document.querySelectorAll("#tabs button").forEach(function(b){b.onclick=function(){setPane(b.dataset.t)}});
+    setPane("ov");
+  }).catch(function(e){
+    app.innerHTML="<h1>"+esc(full)+"</h1>"+errBox(e,' <a href="#/search">← back to search</a>');
+  });
+}
+function wlToggle(r,btn){
+  var w=wl();
+  if(w[r.full_name]){delete w[r.full_name];wlSave(w);btn.textContent="☆ Add to watchlist";}
+  else{wlSnapshot(r);btn.textContent="★ Watching";}
+  if(location.hash==="#/watchlist")watchlist();
+}
+function compareView(a,b){
+  spin();
+  Promise.all([api("/repos/"+a),api("/repos/"+b)]).then(function(rs){
+    var A=rs[0],B=rs[1];
+    var rows=[["Stars","stargazers_count"],["Forks","forks_count"],["Open issues","open_issues_count"],["Watchers","subscribers_count"],["Size (KB)","size"]];
+    app.innerHTML=
+      '<h1>Compare</h1><p class="dim">Two projects, side by side.</p>'+
+      '<div class="two">'+
+      [A,B].map(function(r){return '<div class="pane"><h3><img src="'+esc(r.owner.avatar_url)+'" style="width:22px;height:22px;border-radius:6px;vertical-align:-5px"> '+esc(r.full_name)+"</h3><p class='dim'>"+esc(r.description||"")+"</p></div>"}).join("")+
+      "</div>"+
+      '<div class="pane" style="margin-top:14px"><ul class="list">'+rows.map(function(row){
+        var va=A[row[1]],vb=B[row[1]],best=va===vb?0:(va>vb?1:2);
+        function cell(v,win){return '<b style="color:'+(win?"var(--accent)":"inherit")+'">'+fmt(v)+"</b>"}
+        return "<li><span class='nm'>"+row[0]+"</span><small style='margin-left:0;display:flex;gap:20px;flex:1;justify-content:flex-end'><span>"+cell(va,best===1)+"</span><span>"+cell(vb,best===2)+"</span></small></li>";
+      }).join("")+"</ul></div>"+
+      '<div class="two" style="margin-top:14px">'+
+        '<div class="pane"><h3>Language mix — '+esc(A.full_name)+'</h3><canvas id="ca" data-legend="la"></canvas><div class="legend" id="la"></div></div>'+
+        '<div class="pane"><h3>Language mix — '+esc(B.full_name)+'</h3><canvas id="cb" data-legend="lb"></canvas><div class="legend" id="lb"></div></div>'+
+      "</div>"+
+      '<div class="pane" style="margin-top:14px"><input id="cpin2" placeholder="Swap comparison — owner/repo" style="background:var(--panel2);border:1px solid var(--line);border-radius:999px;color:var(--text);padding:10px 18px;width:min(340px,90%);font-size:14px"> <button class="btn" id="cpx">Compare instead of '+esc(B.full_name)+"</button></div>";
+    api("/repos/"+a+"/languages").then(function(l){donut($("#ca"),Object.entries(l).sort(function(x,y){return y[1]-x[1]}).slice(0,6));draw();});
+    api("/repos/"+b+"/languages").then(function(l){donut($("#cb"),Object.entries(l).sort(function(x,y){return y[1]-x[1]}).slice(0,6));draw();});
+    $("#cpx").onclick=function(){var v=$("#cpin2").value.trim();if(v&&v.includes("/"))location.hash="#/compare/"+encodeURIComponent(a)+"/"+encodeURIComponent(v);};
+  }).catch(function(e){app.innerHTML="<h1>Compare</h1>"+errBox(e,' <a href="#/home">← home</a>')});
+}
+function watchlist(){
+  var w=wl(),names=Object.keys(w);
+  app.innerHTML=
+    '<h1>Watchlist</h1><p class="dim">Stored in your browser (localStorage). Every time you open a watched repository here, a snapshot is recorded — deltas show since your first snapshot. The desktop app does this daily, automatically, with release notifications.</p>'+
+    (names.length?'<div class="pane"><ul class="list">'+names.map(function(n){
+      var e=w[n],d=e.last.stars-e.first.stars;
+      return '<li><img src="'+esc(e.repo.owner&&e.repo.owner.avatar_url||"")+'" alt=""><span><span class="nm"><a href="#/repo/'+esc(n)+'">'+esc(n)+"</a></span><br><small style='margin:0'>first "+fmt(e.first.stars)+" ★ on "+new Date(e.first.t).toLocaleDateString()+"</small></span>"+
+        "<small>"+fmt(e.last.stars)+' ★ '+(d?'<b style="color:var(--accent)">+'+fmt(d)+"</b>":"· no change yet")+' <button class="ghost" data-del="'+esc(n)+'">✕</button></small></li>';
+    }).join("")+"</ul></div>":
+    '<div class="empty">Watchlist is empty — open any repository and press “☆ Add to watchlist”.<br><br><a class="btn" href="#/repo/devodrag/GitScope">Try devodrag/GitScope</a></div>');
+  document.querySelectorAll("[data-del]").forEach(function(b){
+    b.onclick=function(){var w2=wl();delete w2[b.dataset.del];wlSave(w2);watchlist();};
+  });
+}
+
+/* ---------- router ---------- */
+function route(){
+  var h=decodeURIComponent(location.hash)||"#/home";
+  draw();
+  if(h.indexOf("#/repo/")===0)repoView(h.slice(7));
+  else if(h.indexOf("#/search?q=")===0)searchView(h.slice(11));
+  else if(h.indexOf("#/compare/")===0){var parts=h.slice(10).split("/");compareView(parts[0],parts.slice(1).join("/"));}
+  else if(h==="#/watchlist")watchlist();
+  else home();
+}
+addEventListener("hashchange",function(){route();scrollTo(0,0);});
+route();
+
+/* ---------- search box ---------- */
+q.addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&q.value.trim()){
+    location.hash="#/search?q="+encodeURIComponent(q.value.trim());
+  }
+  if(e.key==="Escape")q.blur();
+});
+addEventListener("keydown",function(e){
+  if(e.key==="/"&&document.activeElement!==q){e.preventDefault();q.focus();}
+});
+</script>
+</body>
+</html>
