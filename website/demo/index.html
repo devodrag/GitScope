@@ -412,7 +412,13 @@ function route(){
   draw();
   if(h.indexOf("#/repo/")===0)repoView(h.slice(7));
   else if(h.indexOf("#/search?q=")===0)searchView(h.slice(11));
-  else if(h.indexOf("#/compare/")===0){var parts=h.slice(10).split("/");compareView(parts[0],parts.slice(1).join("/"));}
+  else if(h.indexOf("#/compare/")===0){
+    var parts=h.slice(10).split("/");
+    var a,b;
+    if(parts.length===2){a=decodeURIComponent(parts[0]);b=decodeURIComponent(parts[1]);}
+    else{var half=parts.length/2;a=parts.slice(0,half).join("/");b=parts.slice(half).join("/");}
+    compareView(a,b);
+  }
   else if(h==="#/watchlist")watchlist();
   else home();
 }
