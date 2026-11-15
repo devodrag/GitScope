@@ -46,6 +46,21 @@ window with a local database and an offline response cache.
 
 ## Installation
 
+Website with downloads: **https://gitscope.dev-is.fun**
+
+### Debian, Ubuntu, Mint and derivatives — apt repository
+
+```bash
+curl -fsSL https://gitscope.dev-is.fun/apt/gitscope-archive-keyring.asc | sudo gpg --dearmor -o /usr/share/keyrings/gitscope-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/gitscope-archive-keyring.gpg] https://gitscope.dev-is.fun/apt stable main" | sudo tee /etc/apt/sources.list.d/gitscope.list
+sudo apt update
+sudo apt install git-scope
+```
+
+Future updates arrive with regular `apt upgrade`.
+
+### Any other distribution
+
 Download the current standalone executable from the
 [Releases](https://github.com/devodrag/GitScope/releases) page, make it
 executable and run it:
@@ -63,8 +78,9 @@ bash scripts/install-linux.sh /absolute/path/to/gitscope
 ```
 
 The binary requires glibc 2.34 or newer and uses the system copies of
-GTK 3, WebKitGTK 4.1, SQLite and D-Bus. Debian, Fedora and AppImage
-packages can be produced from source as described below.
+GTK 3, WebKitGTK 4.1, SQLite and D-Bus. The release pipeline attaches
+deb, rpm and AppImage bundles to every tag; a `gitscope-bin` PKGBUILD for
+Arch lives in `packaging/aur`.
 
 ## Build from source
 
