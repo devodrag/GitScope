@@ -693,21 +693,24 @@ fn track_window(window: &WebviewWindow, path: PathBuf) {
                 if let Err(error) = write_export(&path, current.to_string().as_bytes()) {
                     eprintln!("GitScope window state: {:?}", error.code);
                 }
-                let hide_to_tray = handle
-                    .app_handle()
-                    .try_state::<AppState>()
-                    .map(|state| {
-                        state
-                            .github
-                            .store
-                            .settings()
-                            .map(|settings| settings.close_to_tray)
-                            .unwrap_or(true)
-                    })
-                    .unwrap_or(true);
-                if hide_to_tray {
-                    api.prevent_close();
-                    let _ = handle.hide();
+                #[cfg(feature = "tray-icon")]
+                {
+                    let hide_to_tray = handle
+                        .app_handle()
+                        .try_state::<AppState>()
+                        .map(|state| {
+                            state
+                                .github
+                                .store
+                                .settings()
+                                .map(|settings| settings.close_to_tray)
+                                .unwrap_or(true)
+                        })
+                        .unwrap_or(true);
+                    if hide_to_tray {
+                        api.prevent_close();
+                        let _ = handle.hide();
+                    }
                 }
             }
             _ => {}
@@ -827,6 +830,10 @@ pub fn run() {
             } else {
                 "Quit"
             };
+            #[cfg(feature = "tray-icon")]
+            {
+            #[cfg(feature = "tray-icon")]
+            {
             let open_item = tauri::menu::MenuItem::with_id(app, "tray-open", open_label, true, None::<&str>)?;
             let quit_item = tauri::menu::MenuItem::with_id(app, "tray-quit", quit_label, true, None::<&str>)?;
             let tray_menu = tauri::menu::Menu::with_items(app, &[&open_item, &quit_item])?;
@@ -860,6 +867,8 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+            }
+            }
             window.show()?;
             let restored = window.clone();
             gtk::glib::idle_add_local_once(move || restore_window(&restored, &geometry, true));

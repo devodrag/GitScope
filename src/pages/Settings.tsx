@@ -179,7 +179,6 @@ export default function Settings() {
           onChange={value => change({ refreshMinutes: Number(value) })} />
         <p className="panel-footnote">{t('refreshHint')}</p>
         <Toggle label={t('desktopNotices')} checked={settings.desktopNotifications} onChange={desktopNotifications => change({ desktopNotifications })} />
-        <Toggle label={t('closeToTray')} checked={settings.closeToTray} onChange={closeToTray => change({ closeToTray })} />
           {workspace.data.releaseBuild && <Toggle label={t('autostart')} checked={workspace.data.autostart} onChange={enabled => void workspace.perform(async () => {
           await local('autostart', { enabled }); await workspace.sync()
         })} />}
