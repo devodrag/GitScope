@@ -226,8 +226,7 @@ async fn local(
                     args["private"].as_bool().unwrap_or(false),
                     args["autoInit"].as_bool().unwrap_or(true),
                 )
-                .await,
-            );
+                .await;
         }
         "manage_patch" => {
             let manage = manage::auth(store)?;
@@ -260,8 +259,7 @@ async fn local(
                     args["path"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["branch"].as_str().ok_or_else(|| Error::new("validation"))?,
                 )
-                .await,
-            );
+                .await;
         }
         "manage_save_file" => {
             let manage = manage::auth(store)?;
@@ -276,8 +274,7 @@ async fn local(
                     args["content"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["sha"].as_str(),
                 )
-                .await,
-            );
+                .await;
         }
         "manage_delete_file" => {
             let manage = manage::auth(store)?;
@@ -291,8 +288,7 @@ async fn local(
                     args["message"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["sha"].as_str().ok_or_else(|| Error::new("validation"))?,
                 )
-                .await,
-            );
+                .await;
         }
         "manage_branches" => {
             let manage = manage::auth(store)?;
@@ -309,8 +305,7 @@ async fn local(
                     args["name"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["from"].as_str().ok_or_else(|| Error::new("validation"))?,
                 )
-                .await,
-            );
+                .await;
         }
         "manage_releases" => {
             let manage = manage::auth(store)?;
@@ -329,8 +324,7 @@ async fn local(
                     args["body"].as_str().unwrap_or_default(),
                     args["target"].as_str().unwrap_or_default(),
                 )
-                .await,
-            );
+                .await;
         }
         "manage_delete_release" => {
             let manage = manage::auth(store)?;
@@ -350,8 +344,7 @@ async fn local(
                     args["name"].as_str().ok_or_else(|| Error::new("validation"))?,
                     args["data"].as_str().ok_or_else(|| Error::new("validation"))?,
                 )
-                .await,
-            );
+                .await;
         }
         _ => return Err(Error::new("validation")),
     }
