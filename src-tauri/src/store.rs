@@ -95,7 +95,7 @@ pub struct Notice {
     pub repo: String,
     pub title: String,
     pub url: String,
-    created: i64,
+    pub created: i64,
     seen: bool,
 }
 

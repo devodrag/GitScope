@@ -1,6 +1,6 @@
 mod auth;
 mod autostart;
-pub mod manage;
+use crate::manage;
 
 use std::{
     collections::HashMap,
@@ -700,13 +700,19 @@ fn track_window(window: &WebviewWindow, path: PathBuf) {
                 if let Err(error) = write_export(&path, current.to_string().as_bytes()) {
                     eprintln!("GitScope window state: {:?}", error.code);
                 }
-                if let Some(state) = handle.app_handle().try_state::<AppState>()
-                    && Ok(true) == state
-                        .github
-                        .store
-                        .settings()
-                        .map(|settings| settings.close_to_tray)
-                {
+                let hide_to_tray = handle
+                    .app_handle()
+                    .try_state::<AppState>()
+                    .map(|state| {
+                        state
+                            .github
+                            .store
+                            .settings()
+                            .map(|settings| settings.close_to_tray)
+                            .unwrap_or(true)
+                    })
+                    .unwrap_or(true);
+                if hide_to_tray {
                     api.prevent_close();
                     let _ = handle.hide();
                 }
@@ -810,12 +816,20 @@ pub fn run() {
                     }
                 }
             });
-            let open_label = if store.settings().map(|s| s.language == "ru").unwrap_or(false) {
+            let language_ru = app
+                .handle()
+                .state::<AppState>()
+                .github
+                .store
+                .settings()
+                .map(|settings| settings.language == "ru")
+                .unwrap_or(false);
+            let open_label = if language_ru {
                 "Открыть GitScope"
             } else {
                 "Open GitScope"
             };
-            let quit_label = if store.settings().map(|s| s.language == "ru").unwrap_or(false) {
+            let quit_label = if language_ru {
                 "Выход"
             } else {
                 "Quit"
