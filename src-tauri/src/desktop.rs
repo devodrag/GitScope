@@ -211,7 +211,7 @@ async fn local(
         "manage_disconnect" => manage::disconnect(store)?,
         "manage_repos" => {
             let manage = manage::auth(store)?;
-            return manage::repos(manage).await;
+            return manage::repos(&manage).await;
         }
         "manage_create" => {
             let manage = manage::auth(store)?;
@@ -235,19 +235,19 @@ async fn local(
             if let Some(v) = args["description"].as_str() { fields["description"] = json!(v); }
             if let Some(v) = args["homepage"].as_str() { fields["homepage"] = json!(v); }
             if let Some(v) = args["private"].as_bool() { fields["private"] = json!(v); }
-            return Ok(manage::patch_repo(manage, full, fields).await?);
+            return Ok(manage::patch_repo(&manage, full, fields).await?);
         }
         "manage_delete" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(manage::delete_repo(manage, full).await?);
+            return Ok(manage::delete_repo(&manage, full).await?);
         }
         "manage_tree" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
             let path = args["path"].as_str().unwrap_or_default();
             let branch = args["branch"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(manage::tree(manage, full, path, branch).await?);
+            return Ok(manage::tree(&manage, full, path, branch).await?);
         }
         "manage_file" => {
             let manage = manage::auth(store)?;
@@ -293,7 +293,7 @@ async fn local(
         "manage_branches" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(manage::branches(manage, full).await?);
+            return Ok(manage::branches(&manage, full).await?);
         }
         "manage_new_branch" => {
             let manage = manage::auth(store)?;
@@ -310,7 +310,7 @@ async fn local(
         "manage_releases" => {
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
-            return Ok(manage::releases(manage, full).await?);
+            return Ok(manage::releases(&manage, full).await?);
         }
         "manage_new_release" => {
             let manage = manage::auth(store)?;
@@ -330,7 +330,7 @@ async fn local(
             let manage = manage::auth(store)?;
             let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
             let id = args["id"].as_i64().ok_or_else(|| Error::new("validation"))?;
-            return Ok(manage::delete_release(manage, full, id).await?);
+            return Ok(manage::delete_release(&manage, full, id).await?);
         }
         "manage_upload_asset" => {
             let manage = manage::auth(store)?;
