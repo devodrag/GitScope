@@ -25,9 +25,10 @@ const Trending = lazy(() => import('./pages/Analytics').then(module => ({ defaul
 const Activity = lazy(() => import('./pages/Analytics').then(module => ({ default: module.Activity })))
 const Watchlist = lazy(() => import('./pages/Personal').then(module => ({ default: module.Watchlist })))
 const Collections = lazy(() => import('./pages/Personal').then(module => ({ default: module.Collections })))
+const Manage = lazy(() => import('./pages/Manage'))
 const Settings = lazy(loadSettings)
 
-const screens = { overview: Overview, explore: Explore, repositories: Repositories, developers: Profiles, organizations: Profiles, compare: Compare, trending: Trending, activity: Activity, watchlist: Watchlist, collections: Collections, settings: Settings }
+const screens = { overview: Overview, explore: Explore, repositories: Repositories, developers: Profiles, organizations: Profiles, compare: Compare, trending: Trending, activity: Activity, watchlist: Watchlist, collections: Collections, manage: Manage, settings: Settings }
 
 const PageContent = memo(function PageContent({ page }: { page: Route['page'] }) {
   const Screen = screens[page]

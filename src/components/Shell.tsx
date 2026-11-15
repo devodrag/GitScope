@@ -5,8 +5,7 @@ import { getCurrentWindow, type Window } from '@tauri-apps/api/window'
 import {
   Activity, ArrowDownRight, Bell, Bookmark, Building2, ChevronLeft, ChevronRight, CircleUserRound, Code2, Compass,
   FolderClosed, GitCompareArrows, Github, LayoutGrid, Minus, Moon, PanelLeftClose, PanelLeftOpen, Radar, RefreshCw,
-  Search, Settings, Square, Sun, TrendingUp, UsersRound, X,
-} from 'lucide-react'
+  Search, Settings, Square, Sun, TrendingUp, UsersRound, X, KeyRound } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { copyText, local, openGithub, repositoryName } from '../api'
 import { useWorkspace } from '../context'
@@ -19,6 +18,7 @@ const navGroups: [Key, [Page, LucideIcon][]][] = [
   ['workspace', [['overview', LayoutGrid], ['explore', Compass], ['repositories', Code2], ['developers', UsersRound], ['organizations', Building2]]],
   ['analytics', [['compare', GitCompareArrows], ['trending', TrendingUp], ['activity', Activity]]],
   ['personal', [['watchlist', Bookmark], ['collections', FolderClosed]]],
+  ['manage-group', [['manage', KeyRound]]],
 ]
 
 export function ThemeToggle({ effectiveTheme }: { effectiveTheme: Theme }) {
@@ -141,6 +141,7 @@ export function CommandPalette({ close, toggleTheme }: { close: () => void; togg
     id, Icon, label: t(id), run: () => workspace.navigate({ page: id }),
   })))
   commands.push(
+    { id: 'manage', Icon: KeyRound, label: t('manage'), run: () => workspace.navigate({ page: 'manage' }) },
     { id: 'settings', Icon: Settings, label: t('settings'), run: () => workspace.navigate({ page: 'settings' }) },
     { id: 'theme', Icon: Moon, label: t('toggleTheme'), run: toggleTheme },
     { id: 'refresh', Icon: RefreshCw, label: t('refresh'), run: workspace.refresh },

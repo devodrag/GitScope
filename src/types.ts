@@ -1,4 +1,4 @@
-export type Page = 'overview' | 'explore' | 'repositories' | 'developers' | 'organizations' | 'compare' | 'trending' | 'activity' | 'watchlist' | 'collections' | 'settings'
+export type Page = 'overview' | 'explore' | 'repositories' | 'developers' | 'organizations' | 'compare' | 'trending' | 'activity' | 'watchlist' | 'collections' | 'manage' | 'settings'
 export type Route = { page: Page; subject?: string; query?: string; kind?: SearchKind }
 export type SearchKind = 'repositories' | 'users' | 'organizations'
 export type Theme = 'light' | 'dark' | 'system'
@@ -7,7 +7,7 @@ export interface Settings {
   theme: Theme; language: Language; compact: boolean; collapsed: boolean; reducedMotion: boolean;
   startup: 'overview' | 'explore' | 'watchlist' | 'trending';
   cacheMb: number; refreshMinutes: number; desktopNotifications: boolean;
-  dashboardLogin: string; oauthClientId: string
+  dashboardLogin: string; oauthClientId: string; closeToTray: boolean
 }
 export interface Person { login: string; avatar_url: string; name?: string | null; html_url?: string }
 export interface Profile extends Person {
@@ -22,6 +22,21 @@ export interface Repository {
   license: { name: string; spdx_id: string | null } | null
 }
 export interface AppError { code: string; detail?: string | null; retryAt?: number | null }
+export interface ManageStatus { connected: boolean; login: string; scopes: string }
+export interface ManagedRepo {
+  full_name: string; name: string; private: boolean; description: string | null;
+  html_url: string; pushed_at: string | null; stargazers_count: number; default_branch: string
+}
+export interface ManagedEntry {
+  name: string; path: string; type: 'file' | 'dir'; size: number; sha: string;
+  content?: string; encoding?: string; html_url?: string
+}
+export interface ManagedBranch { name: string; commit: { sha: string } }
+export interface ManagedRelease {
+  id: number; tag_name: string; name: string | null; body: string | null;
+  published_at: string | null; html_url: string; assets: { id: number; name: string; size: number }[]
+}
+export interface Digest { first: boolean; items: { full: string; name: string; delta: number; stars: number }[]; notices: { repo: string; title: string; url: string }[] }
 export interface Payload<T> { data: T; stale: boolean; fetchedAt: number; hasNext: boolean; warning: AppError | null }
 export interface SearchResult { total_count: number; incomplete_results: boolean; items: (Repository | Person)[] }
 export interface SearchOptions {

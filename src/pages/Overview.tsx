@@ -1,5 +1,8 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { isTauri } from '@tauri-apps/api/core'
 import { ArrowRight, ArrowUpRight, CalendarDays, GitFork, Github, Layers, Network, Star, UserRound } from 'lucide-react'
+import { digestSeen, nightDigest } from '../api'
+import type { Digest } from '../types'
 import { useWorkspace } from '../context'
 import { useI18n } from '../i18n'
 import { useData } from '../query'
@@ -34,6 +37,12 @@ export default function Overview() {
   const [period, setPeriod] = useState('30D')
   const [selector, setSelector] = useState(false)
   const [ready, setReady] = useState(false)
+  const [digest, setDigest] = useState<Digest | null>(null)
+  const [digestHidden, setDigestHidden] = useState(false)
+  useEffect(() => {
+    if (!isTauri()) return
+    nightDigest().then(setDigest).catch(() => undefined)
+  }, [])
   const knownOrganization = login === 'github'
   const profile = useData('profile', { login, organization: false }, revision)
   const organization = knownOrganization || profile.data?.data.type === 'Organization'
@@ -57,6 +66,24 @@ export default function Overview() {
         <span>{login}</span><span className="muted"><ArrowUpRight size={15} /></span>
       </Button>
     }><div className="today"><CalendarDays size={15} />{date}</div></PageHeading>
+    {digest && !digestHidden && (digest.items.length > 0 || digest.notices.length > 0) &&
+      <div className="card" style={{ borderColor: 'rgba(127,217,127,.45)', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0 }}>{t('digestTitle')}</h3>
+          <Button onClick={() => { void digestSeen(); setDigestHidden(true) }}>{t('digestSeen')}</Button>
+        </div>
+        <div style={{ marginTop: 10 }}>
+          {digest.items.map(item => <div key={item.full} style={{ display: 'flex', gap: 12, padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+            <b>{item.full}</b>
+            <span style={{ marginLeft: 'auto', color: 'var(--accent)' }}>{item.delta >= 0 ? '+' : ''}{new Intl.NumberFormat(locale).format(item.delta)} ★</span>
+            <span className="muted">{new Intl.NumberFormat(locale).format(item.stars)} total</span>
+          </div>)}
+          {digest.notices.map((notice, index) => <div key={index} style={{ display: 'flex', gap: 12, padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+            <b>{notice.repo}</b>
+            <a href={notice.url} target="_blank" rel="noreferrer">{notice.title}</a>
+          </div>)}
+        </div>
+      </div>}
     {profile.error && <ErrorState inline error={profile.error} retry={profile.retry} />}
     <CacheNotice payload={profile.data} />
     {projects.error && <ErrorState inline error={projects.error} retry={projects.retry} />}

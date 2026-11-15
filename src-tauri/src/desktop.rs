@@ -1,5 +1,6 @@
 mod auth;
 mod autostart;
+pub mod manage;
 
 use std::{
     collections::HashMap,
@@ -192,9 +193,208 @@ async fn local(
             ));
         }
         "refresh_watched" => return refresh_watched(&state, &app, true).await,
+        "digest" => return digest(&store).await,
+        "digest_seen" => {
+            store.set_setting(
+                "digest_last",
+                Some(&crate::store::now().to_string()),
+            )?;
+        }
+        "manage_status" => return manage::status(store),
+        "manage_connect" => {
+            let token = args["token"]
+                .as_str()
+                .filter(|token| !token.trim().is_empty())
+                .ok_or_else(|| Error::new("token_format"))?;
+            return manage::connect(store, token.trim()).await;
+        }
+        "manage_disconnect" => manage::disconnect(store)?,
+        "manage_repos" => {
+            let manage = manage::auth(store)?;
+            return Ok(manage::repos(&manage).await?);
+        }
+        "manage_create" => {
+            let manage = manage::auth(store)?;
+            let name = args["name"]
+                .as_str()
+                .ok_or_else(|| Error::new("validation"))?;
+            return Ok(
+                manage::create_repo(
+                    &manage,
+                    name,
+                    args["description"].as_str().unwrap_or_default(),
+                    args["private"].as_bool().unwrap_or(false),
+                    args["autoInit"].as_bool().unwrap_or(true),
+                )
+                .await?,
+            );
+        }
+        "manage_patch" => {
+            let manage = manage::auth(store)?;
+            let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
+            let mut fields = json!({});
+            if let Some(v) = args["description"].as_str() { fields["description"] = json!(v); }
+            if let Some(v) = args["homepage"].as_str() { fields["homepage"] = json!(v); }
+            if let Some(v) = args["private"].as_bool() { fields["private"] = json!(v); }
+            return Ok(manage::patch_repo(&manage, full, fields).await?);
+        }
+        "manage_delete" => {
+            let manage = manage::auth(store)?;
+            let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
+            return Ok(manage::delete_repo(&manage, full).await?);
+        }
+        "manage_tree" => {
+            let manage = manage::auth(store)?;
+            let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
+            let path = args["path"].as_str().unwrap_or_default();
+            let branch = args["branch"].as_str().ok_or_else(|| Error::new("validation"))?;
+            return Ok(manage::tree(&manage, full, path, branch).await?);
+        }
+        "manage_file" => {
+            let manage = manage::auth(store)?;
+            let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
+            return Ok(
+                manage::tree(
+                    &manage,
+                    full,
+                    args["path"].as_str().ok_or_else(|| Error::new("validation"))?,
+                    args["branch"].as_str().ok_or_else(|| Error::new("validation"))?,
+                )
+                .await?,
+            );
+        }
+        "manage_save_file" => {
+            let manage = manage::auth(store)?;
+            let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
+            return Ok(
+                manage::save_file(
+                    &manage,
+                    full,
+                    args["path"].as_str().ok_or_else(|| Error::new("validation"))?,
+                    args["branch"].as_str().ok_or_else(|| Error::new("validation"))?,
+                    args["message"].as_str().ok_or_else(|| Error::new("validation"))?,
+                    args["content"].as_str().ok_or_else(|| Error::new("validation"))?,
+                    args["sha"].as_str(),
+                )
+                .await?,
+            );
+        }
+        "manage_delete_file" => {
+            let manage = manage::auth(store)?;
+            let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
+            return Ok(
+                manage::delete_file(
+                    &manage,
+                    full,
+                    args["path"].as_str().ok_or_else(|| Error::new("validation"))?,
+                    args["branch"].as_str().ok_or_else(|| Error::new("validation"))?,
+                    args["message"].as_str().ok_or_else(|| Error::new("validation"))?,
+                    args["sha"].as_str().ok_or_else(|| Error::new("validation"))?,
+                )
+                .await?,
+            );
+        }
+        "manage_branches" => {
+            let manage = manage::auth(store)?;
+            let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
+            return Ok(manage::branches(&manage, full).await?);
+        }
+        "manage_new_branch" => {
+            let manage = manage::auth(store)?;
+            let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
+            return Ok(
+                manage::new_branch(
+                    &manage,
+                    full,
+                    args["name"].as_str().ok_or_else(|| Error::new("validation"))?,
+                    args["from"].as_str().ok_or_else(|| Error::new("validation"))?,
+                )
+                .await?,
+            );
+        }
+        "manage_releases" => {
+            let manage = manage::auth(store)?;
+            let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
+            return Ok(manage::releases(&manage, full).await?);
+        }
+        "manage_new_release" => {
+            let manage = manage::auth(store)?;
+            let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
+            return Ok(
+                manage::new_release(
+                    &manage,
+                    full,
+                    args["tag"].as_str().ok_or_else(|| Error::new("validation"))?,
+                    args["name"].as_str().unwrap_or_default(),
+                    args["body"].as_str().unwrap_or_default(),
+                    args["target"].as_str().unwrap_or_default(),
+                )
+                .await?,
+            );
+        }
+        "manage_delete_release" => {
+            let manage = manage::auth(store)?;
+            let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
+            let id = args["id"].as_i64().ok_or_else(|| Error::new("validation"))?;
+            return Ok(manage::delete_release(&manage, full, id).await?);
+        }
+        "manage_upload_asset" => {
+            let manage = manage::auth(store)?;
+            let full = args["full"].as_str().ok_or_else(|| Error::new("validation"))?;
+            let id = args["id"].as_i64().ok_or_else(|| Error::new("validation"))?;
+            return Ok(
+                manage::upload_asset(
+                    &manage,
+                    full,
+                    id,
+                    args["name"].as_str().ok_or_else(|| Error::new("validation"))?,
+                    args["data"].as_str().ok_or_else(|| Error::new("validation"))?,
+                )
+                .await?,
+            );
+        }
         _ => return Err(Error::new("validation")),
     }
     Ok(Value::Null)
+}
+
+/// Snapshot deltas and release notices accumulated since the previous run.
+async fn digest(store: &Store) -> Result<Value> {
+    let last = store.setting("digest_last")?;
+    let Some(last) = last else {
+        store.set_setting("digest_last", Some(&crate::store::now().to_string()))?;
+        return Ok(json!({ "first": true, "items": [], "notices": [] }));
+    };
+    let last_num: i64 = last.parse().unwrap_or_else(|_| crate::store::now());
+    let day = chrono::DateTime::from_timestamp(last_num, 0)
+        .map(|time| time.format("%Y-%m-%d").to_string())
+        .unwrap_or_default();
+    let growth = store.growth(&day)?;
+    let items: Vec<Value> = growth
+        .into_iter()
+        .map(|(repo, delta)| {
+            json!({
+                "full": repo.full_name,
+                "name": repo.name,
+                "delta": delta,
+                "stars": repo.stars,
+            })
+        })
+        .collect();
+    let notices: Vec<Value> = store
+        .notices(false)?
+        .into_iter()
+        .filter(|notice| notice.created > last_num)
+        .take(6)
+        .map(|notice| {
+            json!({
+                "repo": notice.repo,
+                "title": notice.title,
+                "url": notice.url,
+            })
+        })
+        .collect();
+    Ok(json!({ "since": last_num, "items": items, "notices": notices }))
 }
 
 async fn refresh_watched(state: &AppState, app: &AppHandle, refresh: bool) -> Result<Value> {
@@ -495,10 +695,20 @@ fn track_window(window: &WebviewWindow, path: PathBuf) {
                 current["x"] = json!(position.x);
                 current["y"] = json!(position.y);
             }
-            WindowEvent::CloseRequested { .. } => {
+            WindowEvent::CloseRequested { api, .. } => {
                 current["maximized"] = json!(maximized);
                 if let Err(error) = write_export(&path, current.to_string().as_bytes()) {
                     eprintln!("GitScope window state: {:?}", error.code);
+                }
+                if let Some(state) = handle.app_handle().try_state::<AppState>()
+                    && Ok(true) == state
+                        .github
+                        .store
+                        .settings()
+                        .map(|settings| settings.close_to_tray)
+                {
+                    api.prevent_close();
+                    let _ = handle.hide();
                 }
             }
             _ => {}
@@ -570,6 +780,14 @@ pub fn run() {
             });
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(Duration::from_secs(20)).await;
+                let state = handle.state::<AppState>();
+                if let Ok(result) = refresh_watched(&state, &handle, false).await {
+                    let _ = handle.emit("gitscope:watch-refresh", &result);
+                }
+            });
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
                 let mut elapsed = 0;
                 loop {
                     tokio::time::sleep(Duration::from_secs(60)).await;
@@ -592,6 +810,49 @@ pub fn run() {
                     }
                 }
             });
+            let open_label = if store.settings().map(|s| s.language == "ru").unwrap_or(false) {
+                "Открыть GitScope"
+            } else {
+                "Open GitScope"
+            };
+            let quit_label = if store.settings().map(|s| s.language == "ru").unwrap_or(false) {
+                "Выход"
+            } else {
+                "Quit"
+            };
+            let open_item = tauri::menu::MenuItem::with_id(app, "tray-open", open_label, true, None::<&str>)?;
+            let quit_item = tauri::menu::MenuItem::with_id(app, "tray-quit", quit_label, true, None::<&str>)?;
+            let tray_menu = tauri::menu::Menu::with_items(app, &[&open_item, &quit_item])?;
+            let _tray = tauri::tray::TrayIconBuilder::with_id("gitscope-tray")
+                .icon(app.default_window_icon().expect("app icon").clone())
+                .tooltip("GitScope")
+                .menu(&tray_menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id().as_ref() {
+                    "tray-open" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "tray-quit" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let tauri::tray::TrayIconEvent::Click {
+                        button: tauri::tray::MouseButton::Left,
+                        button_state: tauri::tray::MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
             window.show()?;
             let restored = window.clone();
             gtk::glib::idle_add_local_once(move || restore_window(&restored, &geometry, true));

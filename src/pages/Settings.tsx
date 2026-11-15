@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Database, Download, Github, Info, Monitor, PersonStanding, Settings as SettingsIcon } from 'lucide-react'
-import { asError, beginAuth, cancelAuth, connectToken, copyText, exportData, finishAuth, local, logout } from '../api'
+import { KeyRound } from 'lucide-react'
+import { asError, beginAuth, cancelAuth, connectToken, copyText, exportData, finishAuth, local, logout, manageConnect, manageDisconnect, manageStatus } from '../api'
+import type { ManageStatus } from '../types'
 import { useWorkspace } from '../context'
 import { useI18n, type Key } from '../i18n'
 import { clearClientCache } from '../query'
@@ -31,6 +33,11 @@ function AccountSettings() {
   const tokenInput = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<ApiStatus>()
   const [statusError, setStatusError] = useState<AppError>()
+  const [manage, setManage] = useState<ManageStatus | null>(null)
+  const [manageTokenInput, setManageTokenInput] = useState('')
+  const [managePending, setManagePending] = useState(false)
+  const [manageConnectError, setManageConnectError] = useState<AppError>()
+  useEffect(() => { manageStatus().then(setManage).catch(() => setManage({ connected: false, login: '', scopes: '' })) }, [])
   useEffect(() => {
     let active = true
     void local<ApiStatus>('rate_status').then(value => { if (active) setStatus(value) }, failure => { if (active) setStatusError(asError(failure)) })
@@ -119,6 +126,27 @@ function AccountSettings() {
         </div>
       </form>
     </Modal>}
+    <div className="card" style={{ marginTop: 20 }}>
+      <h3 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: 8 }}><KeyRound size={16} />{t('manage')}</h3>
+      {manage && manage.connected ? <>
+        <div className="settings-row"><span>{t('manageConnected')} <b>@{manage.login}</b></span>
+          <PendingButton pending={false} onClick={() => manageDisconnect().then(() => manageStatus().then(setManage))}>{t('manageDisconnect')}</PendingButton></div>
+        <p className="muted" style={{ fontSize: 13 }}>{t('manageScopes')}: <b>{manage.scopes || '—'}</b></p>
+        <a href="https://github.com/devodrag/GitScope#manage" style={{ fontSize: 13 }}>{t('manageTitle')} ↗</a>
+      </> : <>
+        <p className="muted">{t('manageIntro')}</p>
+        {manageConnectError && <ErrorState inline error={manageConnectError} />}
+        <div className="dialog-actions">
+          <a className="ghost" style={{ borderRadius: 999, padding: '8px 16px' }} href="https://github.com/settings/tokens/new?description=GitScope%20Manage&scopes=repo,delete_repo" target="_blank" rel="noreferrer">{t('createToken')}</a>
+          <PendingButton variant="primary" pending={managePending} onClick={() => {
+            if (!manageTokenInput.trim()) return
+            setManagePending(true); setManageConnectError(undefined)
+            manageConnect(manageTokenInput.trim()).then(() => { setManageTokenInput(''); manageStatus().then(setManage) })
+              .catch(failure => setManageConnectError(asError(failure))).finally(() => setManagePending(false))
+          }}>{t('manageConnect')}</PendingButton>
+        </div>
+      </>}
+    </div>
   </SettingsSection>
 }
 
@@ -151,6 +179,7 @@ export default function Settings() {
           onChange={value => change({ refreshMinutes: Number(value) })} />
         <p className="panel-footnote">{t('refreshHint')}</p>
         <Toggle label={t('desktopNotices')} checked={settings.desktopNotifications} onChange={desktopNotifications => change({ desktopNotifications })} />
+        <Toggle label={t('closeToTray')} checked={settings.closeToTray} onChange={closeToTray => change({ closeToTray })} />
           {workspace.data.releaseBuild && <Toggle label={t('autostart')} checked={workspace.data.autostart} onChange={enabled => void workspace.perform(async () => {
           await local('autostart', { enabled }); await workspace.sync()
         })} />}

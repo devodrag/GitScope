@@ -17,6 +17,12 @@ export const connectToken = (token: string) => call('auth_connect_token', { toke
 export const cancelAuth = () => call<void>('auth_cancel')
 export const logout = () => call<void>('auth_logout')
 export const refreshWatched = () => local<WatchRefresh>('refresh_watched')
+export const nightDigest = () => call<import('./types').Digest>('local', { operation: 'digest', args: {} })
+export const digestSeen = () => local('digest_seen')
+export const manageStatus = () => local<import('./types').ManageStatus>('local', { operation: 'manage_status', args: {} })
+export const manageConnect = (token: string) => local<import('./types').ManageStatus>('local', { operation: 'manage_connect', args: { token } })
+export const manageDisconnect = () => local('manage_disconnect')
+export const manageApi = <T = unknown>(operation: string, args: Record<string, unknown> = {}) => local<T>(`manage_${operation}`, args)
 
 export function asError(error: unknown): AppError {
   if (typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string') {

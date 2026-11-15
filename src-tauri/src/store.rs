@@ -27,6 +27,7 @@ pub struct Settings {
     pub desktop_notifications: bool,
     pub dashboard_login: String,
     pub oauth_client_id: String,
+    pub close_to_tray: bool,
 }
 
 impl Default for Settings {
@@ -43,6 +44,7 @@ impl Default for Settings {
             desktop_notifications: true,
             dashboard_login: String::new(),
             oauth_client_id: String::new(),
+            close_to_tray: true,
         }
     }
 }
@@ -198,6 +200,32 @@ impl Store {
                 .and_then(|row| row[0].as_deref())
                 .filter(|value| !value.is_empty())
                 .map(str::to_owned))
+        })
+    }
+
+    /// Generic key-value access for service-level settings (digest marker,
+    /// management credentials).
+    pub fn setting(&self, key: &str) -> Result<Option<String>> {
+        self.0.with(|db| {
+            Ok(db
+                .rows("SELECT value FROM app_settings WHERE key=?", &[key.into()])?
+                .first()
+                .and_then(|row| row[0].as_deref())
+                .filter(|value| !value.is_empty())
+                .map(str::to_owned))
+        })
+    }
+
+    pub fn set_setting(&self, key: &str, value: Option<&str>) -> Result<()> {
+        self.0.with(|db| {
+            match value.filter(|value| !value.is_empty()) {
+                Some(value) => db.run(
+                    "INSERT INTO app_settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                    &[key.into(), value.into()],
+                )?,
+                None => db.run("DELETE FROM app_settings WHERE key=?", &[key.into()])?,
+            };
+            Ok(())
         })
     }
 
