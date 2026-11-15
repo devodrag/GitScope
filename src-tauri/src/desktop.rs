@@ -522,6 +522,12 @@ pub fn run() {
         .setup(|app| {
             let path = app.path().app_local_data_dir()?;
             fs::create_dir_all(&path)?;
+            // The data directory holds the credential database; keep it private.
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700))?;
+            }
             let failure =
                 |error: Error| std::io::Error::other(format!("{} {:?}", error.code, error.detail));
             let store = Store::open(&path.join("gitscope.sqlite3")).map_err(failure)?;

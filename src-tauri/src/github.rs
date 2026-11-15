@@ -503,7 +503,7 @@ impl GitHub {
         }
     }
 
-    pub async fn identity(&self, token: &str, require_no_scopes: bool) -> Result<Value> {
+    pub async fn identity(&self, token: &str) -> Result<Value> {
         let response = self
             .client
             .get(format!("{}/user", self.base))
@@ -536,15 +536,6 @@ impl GitHub {
                 500..=599 => "github_unavailable",
                 _ => "github_error",
             }));
-        }
-        let scopes = headers.get_all("x-oauth-scopes");
-        if require_no_scopes {
-            // Only inspect scopes after GitHub has authenticated the classic PAT at /user.
-            for value in scopes {
-                if !value.to_str().is_ok_and(|scopes| scopes.trim().is_empty()) {
-                    return Err(Error::new("token_scope"));
-                }
-            }
         }
         let user = read_body(response).await?;
         Ok(
@@ -644,7 +635,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn classic_identity_accepts_omitted_or_empty_scope_header() {
+    fn classic_identity_accepts_any_authenticated_token() {
         use std::{
             io::{BufRead, BufReader, Write},
             net::TcpListener,
@@ -658,15 +649,13 @@ mod tests {
         for (status, headers, expected_error) in [
             ("200 OK", "", None),
             ("200 OK", "X-OAuth-Scopes:\r\n", None),
-            (
-                "200 OK",
-                "X-OAuth-Scopes: public_repo\r\n",
-                Some("token_scope"),
-            ),
+            // Any authenticated classic token is accepted; scopes only widen
+            // what GitHub allows, and GitScope itself uses read-only endpoints.
+            ("200 OK", "X-OAuth-Scopes: public_repo\r\n", None),
             (
                 "200 OK",
                 "X-OAuth-Scopes:\r\nX-OAuth-Scopes: repo\r\n",
-                Some("token_scope"),
+                None,
             ),
             ("401 Unauthorized", "", Some("unauthorized")),
         ] {
@@ -692,7 +681,7 @@ mod tests {
                     body.len()
                 ).unwrap();
             });
-            let result = runtime.block_on(github.identity("test-fixture", true));
+            let result = runtime.block_on(github.identity("test-fixture"));
             server.join().unwrap();
             if let Some(error) = expected_error {
                 assert_eq!(result.unwrap_err().code, error);

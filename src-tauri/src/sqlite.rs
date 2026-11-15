@@ -34,8 +34,28 @@ fn database_error(error: sqlx::Error) -> Error {
     Error::detail("database", error)
 }
 
+fn restrict_permissions(path: &Path) -> Result<()> {
+    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+
+    if !path.exists() {
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .mode(0o600)
+            .open(path)
+            .map_err(database_error)?;
+    }
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
+        .map_err(database_error)?;
+    Ok(())
+}
+
 impl Database {
     pub fn open(path: &Path) -> Result<Self> {
+        // The database stores the GitHub credential, so make sure the file (and
+        // therefore the WAL and shm files SQLite derives from it) is readable
+        // only by the owning user, whether it already exists or gets created.
+        restrict_permissions(path)?;
         let options = SqliteConnectOptions::new()
             .filename(path)
             .create_if_missing(true)

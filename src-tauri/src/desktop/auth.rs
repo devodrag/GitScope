@@ -162,7 +162,7 @@ pub async fn finish(state: &AppState) -> Result<Value> {
             {
                 return Err(Error::new("oauth_scope"));
             }
-            let user = cancellable(&cancel, state.github.identity(token, false)).await??;
+            let user = cancellable(&cancel, state.github.identity(token)).await??;
             let _session = state.auth.session.lock().await;
             if cancel.is_cancelled() {
                 return Err(Error::new("cancelled"));
@@ -190,7 +190,7 @@ pub async fn connect_token(state: &AppState, token: String) -> Result<Value> {
     if state.github.store.account()?.is_some() {
         return Err(Error::new("validation"));
     }
-    let user = state.github.identity(token, true).await?;
+    let user = state.github.identity(token).await?;
     save_account(state, token.to_owned(), user).await
 }
 
@@ -298,5 +298,27 @@ mod tests {
         store.set_token(Some("ghp_XYZ")).unwrap();
         store.set_token(None).unwrap();
         assert_eq!(store.token().unwrap(), None);
+    }
+
+    #[test]
+    fn account_and_token_survive_reopening_the_database() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.sqlite3");
+        {
+            let store = Store::open(&path).unwrap();
+            store.set_token(Some("ghp_ABCDEFGHIJKLMNOP")).unwrap();
+            store
+                .set_account_and_clear_cache(Some(&serde_json::json!({
+                    "login": "octocat", "avatar_url": "", "name": "Octocat"
+                })))
+                .unwrap();
+        }
+        // Simulates a reboot: a fresh process opens the same database file.
+        let reopened = Store::open(&path).unwrap();
+        assert_eq!(reopened.token().unwrap().as_deref(), Some("ghp_ABCDEFGHIJKLMNOP"));
+        assert_eq!(
+            reopened.account().unwrap().expect("account survives")["login"],
+            "octocat"
+        );
     }
 }

@@ -41,6 +41,18 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.1.5" date="2026-11-15">
+      <description>
+        <p>
+          Connecting an account now accepts any authenticated classic personal
+          token, including tokens with scopes, so an existing token works
+          as-is; a scopeless token remains the recommended minimum. The
+          credential database and its data directory are now private to the
+          owning user, and the connected account reliably survives application
+          restarts.
+        </p>
+      </description>
+    </release>
     <release version="0.1.4" date="2026-11-15">
       <description>
         <p>
