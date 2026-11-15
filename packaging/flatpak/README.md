@@ -48,15 +48,34 @@ generated `vendor/` and `.cargo/` directories stay uncommitted (see
 
 ## Publishing to Flathub
 
+**Submission status (2026-11-15):** deferred. An earlier automated submission
+(flathub/flathub#11193) was closed by the submission checker for an
+incomplete checklist. The Flathub generative-AI policy prohibits
+AI-generated or AI-assisted manifests and AI-opened submission pull
+requests, so when resubmitting: the author hand-writes the manifest and the
+pull request description, opens the PR personally, and handles all review
+interactions. Verified build assets ready for that moment:
+
+- Local build verified against org.gnome.Platform//51, manifest and
+  build-dir pass flatpak-builder-lint.
+- Demo video of the Flatpak build:
+  <https://github.com/devodrag/GitScope/releases/download/v0.1.4/gitscope-flatpak-demo-0.1.4.mp4>
+- Working reference manifest:
+  <https://github.com/devodrag/flathub/blob/io.github.devodrag.GitScope/io.github.devodrag.GitScope.yml>
+
+Procedure when ready:
+
 1. Fork <https://github.com/flathub/flathub> (uncheck *Copy the master branch
    only*), clone it and create a branch from `new-pr`.
-2. Add the manifest at the repository root, commit, push and open a pull
-   request titled `Add com.devodrag.GitScope` targeting the `new-pr` branch.
-3. Respond to reviewer comments without closing the PR; when asked, comment
+2. Hand-write the manifest at the repository root (use the reference above as
+   documentation; retype it), commit, push and open a pull request titled
+   `Add io.github.devodrag.GitScope` targeting the `new-pr` branch, with the
+   full submission checklist and the demo video link.
+3. Respond to reviewer comments personally; when asked, comment
    `bot, build` to trigger a test build of the manifest.
 4. After approval and merge, an invitation to the per-app repository
-   (`flathub/com.devodrag.GitScope`) arrives — accept it within a week with
-   2FA enabled on GitHub, then push releases there.
+   (`flathub/io.github.devodrag.GitScope`) arrives — accept it within a week
+   with 2FA enabled on GitHub, then push releases there.
 
 Keep metadata in sync: every upstream release adds a `<release>` element to
 the metainfo, refreshes the vendored tarballs, and bumps `runtime-version`
