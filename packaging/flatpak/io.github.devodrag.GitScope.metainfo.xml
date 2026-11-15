@@ -41,6 +41,18 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.1.6" date="2026-11-15">
+      <description>
+        <p>
+          Repository management arrives: connect a dedicated classic token to
+          browse, create, edit and delete your own repositories, manage files
+          with real commits, and publish releases with assets. Closing the
+          window now keeps GitScope in the tray, a while-you-were-away digest
+          summarizes watched projects on start, and watched repositories
+          refresh in the background right after launch.
+        </p>
+      </description>
+    </release>
     <release version="0.1.5" date="2026-11-15">
       <description>
         <p>
